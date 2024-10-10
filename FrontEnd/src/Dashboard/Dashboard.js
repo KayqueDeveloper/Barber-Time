@@ -1,8 +1,13 @@
 // Dashboard.js
 import React from "react";
+import { useNavigate } from "react-router-dom";
+
 import "./Dashboard.css";
 
 const Dashboard = () => {
+
+  const navigate = useNavigate()
+
   return (
     <div className="dashboard-container">
       <h2>Dashboard</h2>
@@ -28,9 +33,9 @@ const Dashboard = () => {
       <div className="actions">
         <h3>Gerenciar</h3>
         <div className="action-buttons">
-          <button className="action-button">Agendamentos</button>
-          <button className="action-button">Clientes</button>
-          <button className="action-button">Serviços</button>
+          <button className="action-button" onClick={() => navigate("/agendamentos")}>Agendamentos</button>
+          <button className="action-button" onClick={() => navigate("/clientes")}>Clientes</button>
+          <button className="action-button" onClick={() => navigate("/servicos")}>Serviços</button>
         </div>
       </div>
     </div>

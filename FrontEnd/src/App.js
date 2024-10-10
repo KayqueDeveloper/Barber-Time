@@ -1,62 +1,89 @@
-// Configuracoes.js
-import React, { useState } from "react";
-import "./Configuracoes.css";
+// App.js
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Login from "./Login";
+import Dashboard from "./Dashboard";
+import Agendamentos from "./Agendamentos";
+import Clientes from "./Clientes";
+import Servicos from "./Servicos";
+import Funcionarios from "./Funcionarios";
+import Relatorios from "./Relatorios";
+import Configuracoes from "./Configuracoes";
+import Header from "./Header"; // Importando o Header
 
-const Configuracoes = () => {
-  // Estados para armazenar as configurações
-  const [horarioAbertura, setHorarioAbertura] = useState("08:00");
-  const [horarioFechamento, setHorarioFechamento] = useState("18:00");
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState(true);
-
-  // Função para salvar as configurações
-  const salvarConfiguracoes = () => {
-    console.log("Configurações Salvas:");
-    console.log("Horário de Abertura:", horarioAbertura);
-    console.log("Horário de Fechamento:", horarioFechamento);
-    console.log("Notificações Ativas:", notificacoesAtivas);
-    alert("Configurações salvas com sucesso!");
-  };
-
+function App() {
   return (
-    <div className="configuracoes-container">
-      <h2>Configurações do Sistema</h2>
-
-      <div className="form-configuracoes">
-        <div className="form-group">
-          <label>Horário de Abertura:</label>
-          <input
-            type="time"
-            value={horarioAbertura}
-            onChange={(e) => setHorarioAbertura(e.target.value)}
+    <Router>
+      <div>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route
+            path="/dashboard"
+            element={
+              <>
+                <Header />
+                <Dashboard />
+              </>
+            }
           />
-        </div>
-
-        <div className="form-group">
-          <label>Horário de Fechamento:</label>
-          <input
-            type="time"
-            value={horarioFechamento}
-            onChange={(e) => setHorarioFechamento(e.target.value)}
+          <Route
+            path="/agendamentos"
+            element={
+              <>
+                <Header />
+                <Agendamentos />
+              </>
+            }
           />
-        </div>
-
-        <div className="form-group">
-          <label>Notificações:</label>
-          <select
-            value={notificacoesAtivas}
-            onChange={(e) => setNotificacoesAtivas(e.target.value === "true")}
-          >
-            <option value="true">Ativadas</option>
-            <option value="false">Desativadas</option>
-          </select>
-        </div>
-
-        <button className="save-button" onClick={salvarConfiguracoes}>
-          Salvar Configurações
-        </button>
+          <Route
+            path="/clientes"
+            element={
+              <>
+                <Header />
+                <Clientes />
+              </>
+            }
+          />
+          <Route
+            path="/servicos"
+            element={
+              <>
+                <Header />
+                <Servicos />
+              </>
+            }
+          />
+          <Route
+            path="/funcionarios"
+            element={
+              <>
+                <Header />
+                <Funcionarios />
+              </>
+            }
+          />
+          <Route
+            path="/relatorios"
+            element={
+              <>
+                <Header />
+                <Relatorios />
+              </>
+            }
+          />
+          <Route
+            path="/configuracoes"
+            element={
+              <>
+                <Header />
+                <Configuracoes />
+              </>
+            }
+          />
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
-};
+}
 
-export default Configuracoes;
+export default App;

@@ -1,11 +1,15 @@
 // Login.js
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import "./Login.css"; // Estilização da tela de login
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  const navigate = useNavigate()
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -19,6 +23,10 @@ const Login = () => {
     // Lógica de autenticação aqui
     console.log("Email: ", email);
     console.log("Senha: ", password);
+
+    if (email === "krh021727@gmail.com" && password === "k0203h27") {
+      navigate("/dashboard")
+      }
 
     // Limpar erro após login correto
     setError("");
