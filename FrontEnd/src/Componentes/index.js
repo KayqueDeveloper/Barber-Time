@@ -1,0 +1,1 @@
+export { adicionarCliente } from 'adicionarCliente'
