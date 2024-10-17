@@ -1,72 +1,18 @@
 /* Relatorios.css */
 .relatorios-container {
-    padding: 20px;
-  }
-  
-  h2 {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .filtro-relatorios {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .filtro-relatorios label {
-    margin-right: 10px;
-  }
-  
-  .filtro-relatorios input {
-    padding: 8px;
-    margin-right: 20px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-  }
-  
-  .generate-button {
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .generate-button:hover {
-    background-color: #45a049;
-  }
-  
-  .relatorio-result {
-    margin-top: 20px;
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .relatorio-result p {
-    font-size: 18px;
-  }
-  
-  .export-buttons {
-    margin-top: 20px;
-    text-align: center;
-  }
-  
-  .export-button {
-    padding: 10px 20px;
-    margin: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .export-button:hover {
-    background-color: #0056b3;
-  }
-  
+  padding: 20px;
+}
+
+.relatorio-card {
+  padding: 20px;
+  text-align: center;
+  background-color: #f5f5f5;
+}
+
+.relatorio-card h6 {
+  font-size: 18px;
+}
+
+.relatorio-card canvas {
+  max-height: 400px;
+}

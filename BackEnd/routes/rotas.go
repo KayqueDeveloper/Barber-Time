@@ -2,6 +2,7 @@ package routes
 
 import (
 	"barberTime/controllers"
+	"barberTime/handlers"
 
 	"github.com/gorilla/mux"
 )
@@ -40,6 +41,8 @@ func ConfigurarRotas() *mux.Router {
 	// Rotas de Configurações
 	r.HandleFunc("/configuracoes", controllers.BuscarConfiguracao).Methods("GET")
 	r.HandleFunc("/configuracoes", controllers.AtualizarConfiguracao).Methods("PUT")
+
+	r.HandleFunc("/login", handlers.LoginHandler).Methods("POST")
 
 	return r
 }

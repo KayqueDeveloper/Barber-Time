@@ -1,67 +1,94 @@
 // Login.js
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import "./Login.css"; // Estilização da tela de login
+import {
+  Button,
+  TextField,
+  Typography,
+  Paper,
+  Box,
+} from "@mui/material";
+import axios from "axios";
+import { useNavigate } from "react-router-dom"; // Para redirecionamento
+import "./Login.css";
 
 const Login = () => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Hook para redirecionamento
 
-  const navigate = useNavigate()
-
-  const handleLogin = (e) => {
+  // Função para validar e enviar as credenciais
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Validação simples de exemplo
-    if (email === "" || password === "") {
-      setError("Preencha todos os campos.");
+    if (!email || !senha) {
+      setError("Por favor, preencha todos os campos.");
       return;
     }
 
-    // Lógica de autenticação aqui
-    console.log("Email: ", email);
-    console.log("Senha: ", password);
-
-    if (email === "krh021727@gmail.com" && password === "k0203h27") {
-      navigate("/dashboard")
+    setLoading(true);
+    try {
+      const response = await axios.post("http://localhost:8080/login", {
+        email,
+        senha,
+      });
+      if (response.status === 200) {
+        // Login bem-sucedido
+        navigate("/dashboard"); // Redireciona para o Dashboard
       }
-
-    // Limpar erro após login correto
-    setError("");
+    } catch (error) {
+      setError("Credenciais inválidas. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
-      <h2>Login</h2>
-      {error && <p className="error-message">{error}</p>}
-      <form onSubmit={handleLogin}>
-        <div className="form-group">
-          <label>Email:</label>
-          <input
+      <Paper elevation={3} className="login-paper">
+        <Typography variant="h4" gutterBottom>
+          Login
+        </Typography>
+        {error && <Typography color="error">{error}</Typography>}
+
+        <form onSubmit={handleLogin}>
+          {/* Campo de Email */}
+          <TextField
+            fullWidth
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Digite seu email"
+            margin="normal"
+            required
           />
-        </div>
-        <div className="form-group">
-          <label>Senha:</label>
-          <input
+
+          {/* Campo de Senha */}
+          <TextField
+            fullWidth
+            label="Senha"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Digite sua senha"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            margin="normal"
+            required
           />
-        </div>
-        <button type="submit" className="login-button">
-          Entrar
-        </button>
-      </form>
-      <p className="forgot-password">
-        Esqueceu sua senha? <a href="/recuperar-senha">Recuperar senha</a>
-      </p>
+
+          <Box mt={2}>
+            {/* Botão de Login */}
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              disabled={loading}
+            >
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+          </Box>
+        </form>
+      </Paper>
     </div>
   );
 };

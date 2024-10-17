@@ -1,24 +1,37 @@
 // Header.js
 import React from "react";
-import { Link } from "react-router-dom";
+import { AppBar, Toolbar, Typography, IconButton, Button } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import AccountCircle from "@mui/icons-material/AccountCircle";
 import "./Header.css";
+import {  useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const navigate = useNavigate()
   return (
-    <header className="header">
-      <h1>Gerenciamento de Barbearia</h1>
-      <nav>
-        <ul className="nav-links">
-          <li><Link to="/dashboard">Dashboard</Link></li>
-          <li><Link to="/agendamentos">Agendamentos</Link></li>
-          <li><Link to="/clientes">Clientes</Link></li>
-          <li><Link to="/servicos">Serviços</Link></li>
-          <li><Link to="/funcionarios">Funcionários</Link></li>
-          <li><Link to="/relatorios">Relatórios</Link></li>
-          <li><Link to="/configuracoes">Configurações</Link></li>
-        </ul>
-      </nav>
-    </header>
+    <AppBar position="static" className="header-appbar">
+      <Toolbar>
+
+        {/* Nome do Sistema/Empresa */}
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          Barber Management System
+        </Typography>
+
+        {/* Botões de Navegação */}
+        <Button color="inherit" onClick={() => navigate('/dashboard')}>Dashboard</Button>
+        <Button color="inherit" onClick={() => navigate('/clientes')}>Clientes</Button>
+        <Button color="inherit" onClick={() => navigate('/servicos')}>Serviços</Button>
+        <Button color="inherit" onClick={() => navigate('/funcionarios')}>Funcionários</Button>
+        <Button color="inherit" onClick={() => navigate('/agendamentos')}>Agendamentos</Button>
+        <Button color="inherit" onClick={() => navigate('/relatorios')}>Relatórios</Button>
+        <Button color="inherit"onClick={() => navigate('/configuracoes')} >Configurações</Button>
+
+        {/* Ícone de Perfil */}
+        <IconButton color="inherit">
+          <AccountCircle />
+        </IconButton>
+      </Toolbar>
+    </AppBar>
   );
 };
 

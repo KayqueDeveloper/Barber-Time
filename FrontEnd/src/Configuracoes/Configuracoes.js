@@ -1,60 +1,126 @@
 // Configuracoes.js
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Switch,
+  FormControlLabel,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
+import axios from "axios";
 import "./Configuracoes.css";
 
 const Configuracoes = () => {
-  // Estados para armazenar as configurações
-  const [horarioAbertura, setHorarioAbertura] = useState("08:00");
-  const [horarioFechamento, setHorarioFechamento] = useState("18:00");
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState(true);
+  const [horarioAbertura, setHorarioAbertura] = useState("");
+  const [horarioFechamento, setHorarioFechamento] = useState("");
+  const [notificacoesAtivas, setNotificacoesAtivas] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  // Função para salvar as configurações
-  const salvarConfiguracoes = () => {
-    console.log("Configurações Salvas:");
-    console.log("Horário de Abertura:", horarioAbertura);
-    console.log("Horário de Fechamento:", horarioFechamento);
-    console.log("Notificações Ativas:", notificacoesAtivas);
-    alert("Configurações salvas com sucesso!");
+  // Função para buscar as configurações do backend
+  const fetchConfiguracoes = async () => {
+    try {
+      const response = await axios.get("http://localhost:8080/configuracoes");
+      const { horario_abertura, horario_fechamento, notificacoes_ativas } = response.data;
+      setHorarioAbertura(horario_abertura);
+      setHorarioFechamento(horario_fechamento);
+      setNotificacoesAtivas(notificacoes_ativas);
+      setLoading(false);
+    } catch (error) {
+      setError("Erro ao buscar configurações");
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchConfiguracoes();
+  }, []);
+
+  // Função para salvar as configurações no backend
+  const salvarConfiguracoes = async () => {
+    try {
+      await axios.put("http://localhost:8080/configuracoes", {
+        horario_abertura: horarioAbertura,
+        horario_fechamento: horarioFechamento,
+        notificacoes_ativas: notificacoesAtivas,
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000); // Mensagem de sucesso por 3 segundos
+    } catch (error) {
+      setError("Erro ao salvar configurações");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <div className="configuracoes-container">
-      <h2>Configurações do Sistema</h2>
+      <Paper elevation={3} className="configuracoes-form">
+        <Typography variant="h4" gutterBottom>
+          Configurações
+        </Typography>
 
-      <div className="form-configuracoes">
-        <div className="form-group">
-          <label>Horário de Abertura:</label>
-          <input
-            type="time"
-            value={horarioAbertura}
-            onChange={(e) => setHorarioAbertura(e.target.value)}
-          />
-        </div>
+        {error && <Typography color="error">{error}</Typography>}
+        {success && <Typography color="primary">Configurações salvas com sucesso!</Typography>}
 
-        <div className="form-group">
-          <label>Horário de Fechamento:</label>
-          <input
-            type="time"
-            value={horarioFechamento}
-            onChange={(e) => setHorarioFechamento(e.target.value)}
-          />
-        </div>
+        {/* Campo para horário de abertura */}
+        <TextField
+          fullWidth
+          label="Horário de Abertura"
+          type="time"
+          value={horarioAbertura}
+          onChange={(e) => setHorarioAbertura(e.target.value)}
+          margin="normal"
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
 
-        <div className="form-group">
-          <label>Notificações:</label>
-          <select
-            value={notificacoesAtivas}
-            onChange={(e) => setNotificacoesAtivas(e.target.value === "true")}
-          >
-            <option value="true">Ativadas</option>
-            <option value="false">Desativadas</option>
-          </select>
-        </div>
+        {/* Campo para horário de fechamento */}
+        <TextField
+          fullWidth
+          label="Horário de Fechamento"
+          type="time"
+          value={horarioFechamento}
+          onChange={(e) => setHorarioFechamento(e.target.value)}
+          margin="normal"
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
 
-        <button className="save-button" onClick={salvarConfiguracoes}>
+        {/* Switch para notificações */}
+        <FormControlLabel
+          control={
+            <Switch
+              checked={notificacoesAtivas}
+              onChange={(e) => setNotificacoesAtivas(e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Notificações Ativas"
+        />
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={salvarConfiguracoes}
+          fullWidth
+          style={{ marginTop: "20px" }}
+        >
           Salvar Configurações
-        </button>
-      </div>
+        </Button>
+      </Paper>
     </div>
   );
 };
