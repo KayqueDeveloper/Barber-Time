@@ -9,7 +9,7 @@ import Servicos from "./Servicos";
 import Funcionarios from "./Funcionarios";
 import Relatorios from "./Relatorios";
 import Configuracoes from "./Configuracoes";
-import Header from "./Header"; // Importando o Header
+import Header from "./Header";
 
 function App() {
   return (

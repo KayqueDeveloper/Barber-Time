@@ -1,210 +1,226 @@
-// Agendamentos.js
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Calendar, momentLocalizer } from "react-big-calendar";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import moment from "moment";
+import axios from "axios";
 import {
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Modal,
-  Box,
-  TextField,
   Typography,
-  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import axios from "axios";
-import "./Agendamentos.css";
+import dayjs from "dayjs"; // Usaremos dayjs para trabalhar com as datas no form
 
-const Agendamentos = () => {
-  const [agendamentos, setAgendamentos] = useState([]);
-  const [open, setOpen] = useState(false); // Estado para controlar o modal
-  const [cliente, setCliente] = useState("");
-  const [funcionario, setFuncionario] = useState("");
+import * as S from "./Agendamentos.style";
+
+const localizer = momentLocalizer(moment);
+
+const CalendarComponent = () => {
+  const [events, setEvents] = useState([]); // Armazena agendamentos do backend
+  const [clientes, setClientes] = useState([]);
+  const [servicos, setServicos] = useState([]);
+  const [funcionarios, setFuncionarios] = useState([]);
   const [servico, setServico] = useState("");
-  const [dataAgendamento, setDataAgendamento] = useState("");
-  const [horaAgendamento, setHoraAgendamento] = useState("");
+  const [modalOpen, setModalOpen] = useState(false); // Controle do modal
+  const [selectedSlot, setSelectedSlot] = useState(null); // Horário selecionado
+  const [cliente, setCliente] = useState(""); // Dados do cliente no agendamento
+  const [funcionario, setFuncionario] = useState(""); // Dados do funcionário
   const [error, setError] = useState("");
 
-  // Função para buscar os agendamentos do backend
+  // Função para buscar agendamentos do backend
   const fetchAgendamentos = async () => {
     try {
       const response = await axios.get("http://localhost:8080/agendamentos");
-      setAgendamentos(response.data);
+      const agendamentos = response.data.map((agendamento) => ({
+        title: `Agendado: Cliente ${agendamento.cliente_id}`,
+        start: new Date(2024, 10, 23, 13, 0), // Formatação correta
+        end: new Date(2024, 10, 23, 13, 30),
+      }));
+      setEvents(agendamentos);
     } catch (error) {
-      setError("Erro ao buscar agendamentos");
+      console.error("Erro ao buscar agendamentos: ", error);
     }
   };
 
   useEffect(() => {
-    fetchAgendamentos();
+    const fetchClientes = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/clientes");
+        setClientes(response.data);
+      } catch (error) {
+        setError("Erro ao buscar clientes");
+      }
+    };
+
+    fetchClientes();
   }, []);
 
-  // Função para abrir o modal
-  const handleOpen = () => setOpen(true);
-  // Função para fechar o modal
-  const handleClose = () => setOpen(false);
+  useEffect(() => {
+    const fetchServicos = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/servicos");
+        setServicos(response.data);
+      } catch (error) {
+        setError("Erro ao buscar serviços");
+      }
+    };
 
-  // Função para adicionar agendamento
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    fetchServicos();
+  }, []);
+
+  useEffect(() => {
+    const fetchFuncionarios = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/funcionarios");
+        setFuncionarios(response.data);
+      } catch (error) {
+        setError("Erro ao buscar funcionários");
+      }
+    };
+
+    fetchFuncionarios();
+  }, []);
+
+  // Função para abrir o modal e marcar um agendamento
+  const handleSelectSlot = (slotInfo) => {
+    console.log(slotInfo);
+    setSelectedSlot(slotInfo);
+    setModalOpen(true);
+  };
+
+  // Função para fechar o modal
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedSlot(null);
+    setCliente("");
+    setFuncionario("");
+  };
+
+  // Função para confirmar o agendamento
+  const handleConfirmAgendamento = async () => {
     try {
-      const response = await axios.post("http://localhost:8080/agendamentos", {
+      await axios.post("http://localhost:8080/agendamentos", {
         cliente_id: cliente,
         funcionario_id: funcionario,
         servico_id: servico,
-        data_agendamento: dataAgendamento,
-        hora_agendamento: horaAgendamento,
+        data_hora: selectedSlot.start,
       });
-      setAgendamentos([...agendamentos, response.data]); // Atualiza a lista de agendamentos
-      handleClose(); // Fecha o modal
-      setCliente("");
-      setFuncionario("");
-      setServico("");
-      setDataAgendamento("");
-      setHoraAgendamento("");
+      fetchAgendamentos(); // Atualiza a lista de agendamentos
+      handleCloseModal(); // Fecha o modal após confirmação
     } catch (error) {
-      setError("Erro ao adicionar agendamento");
+      console.error("Erro ao agendar: ", error);
     }
   };
 
-  // Função para remover agendamento
-  const removerAgendamento = async (id) => {
-    try {
-      await axios.delete(`http://localhost:8080/agendamentos/${id}`);
-      setAgendamentos(agendamentos.filter((agendamento) => agendamento.id !== id));
-    } catch (error) {
-      setError("Erro ao remover agendamento");
-    }
+  // Chamar a função para buscar agendamentos quando o componente é montado
+  useEffect(() => {
+    fetchAgendamentos();
+  }, []);
+
+  const handleChangeCliente = (event) => {
+    setCliente(event?.target?.value);
   };
 
-  // Estilo para o modal
-  const modalStyle = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 400,
-    bgcolor: "background.paper",
-    boxShadow: 24,
-    p: 4,
+  const handleChangeFuncionario = (event) => {
+    setFuncionario(event?.target?.value);
+  };
+
+  const handleChangeServico = (event) => {
+    setServico(event?.target?.value);
   };
 
   return (
-    <div className="agendamentos-container">
+    <div>
       <Typography variant="h4" gutterBottom>
-        Gerenciamento de Agendamentos
+        Agendamento de Barbearia
       </Typography>
-      {error && <Typography color="error">{error}</Typography>}
 
-      <Button variant="contained" color="primary" onClick={handleOpen}>
-        Adicionar Agendamento
-      </Button>
+      {/* Calendário */}
+      <Calendar
+        localizer={localizer}
+        events={events} // Mostra os eventos no calendário
+        selectable // Permite selecionar um horário
+        onSelectSlot={handleSelectSlot} // Ação ao selecionar um horário
+        defaultView="day"
+        startAccessor="start"
+        endAccessor="end"
+        min={new Date().setHours(8, 0, 0)}
+        max={new Date().setHours(18, 0, 0)}
+        style={{ height: 700, margin: "50px" }}
+      />
 
-      {/* Modal para adicionar agendamento */}
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
-            Adicionar Agendamento
+      {/* Modal para Confirmar Agendamento */}
+      <Modal open={modalOpen} onClose={handleCloseModal}>
+        <S.ModalStyle>
+          <Typography variant="h6" gutterBottom>
+            Confirmar Agendamento
           </Typography>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Cliente (ID)"
-              value={cliente}
-              onChange={(e) => setCliente(e.target.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Funcionário (ID)"
-              value={funcionario}
-              onChange={(e) => setFuncionario(e.target.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Serviço (ID)"
-              value={servico}
-              onChange={(e) => setServico(e.target.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Data (YYYY-MM-DD)"
-              value={dataAgendamento}
-              onChange={(e) => setDataAgendamento(e.target.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Hora (HH:MM:SS)"
-              value={horaAgendamento}
-              onChange={(e) => setHoraAgendamento(e.target.value)}
-              margin="normal"
-              required
-            />
+          <S.formulario>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">Cliente</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={cliente}
+                label="Cliente"
+                onChange={handleChangeCliente}
+              >
+                {clientes.map((client, index) => (
+                  <MenuItem value={client.id}>{client?.nome}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">Funcionario</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={funcionario}
+                label="Funcionario"
+                onChange={handleChangeFuncionario}
+              >
+                {funcionarios.map((funcionario, _) => (
+                  <MenuItem value={funcionario.id}>
+                    {funcionario?.nome}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">Serviço</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={servico}
+                label="Serviço"
+                onChange={handleChangeServico}
+              >
+                {servicos.map((servico, _) => (
+                  <MenuItem value={servico.id}>{servico?.nome}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography gutterBottom>
+              Horário Selecionado:{" "}
+              {dayjs(selectedSlot?.start).format("DD/MM/YYYY HH:mm")}
+            </Typography>
             <Button
-              type="submit"
               variant="contained"
               color="primary"
+              onClick={handleConfirmAgendamento}
               fullWidth
-              style={{ marginTop: "16px" }}
+              sx={{ mt: 2 }}
             >
-              Adicionar
+              Confirmar Agendamento
             </Button>
-          </form>
-        </Box>
+          </S.formulario>
+        </S.ModalStyle>
       </Modal>
-
-      {/* Tabela de Agendamentos */}
-      <TableContainer component={Paper} style={{ marginTop: "20px" }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Cliente</TableCell>
-              <TableCell>Funcionário</TableCell>
-              <TableCell>Serviço</TableCell>
-              <TableCell>Data</TableCell>
-              <TableCell>Hora</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {agendamentos?.map((agendamento) => (
-              <TableRow key={agendamento.id}>
-                <TableCell>{agendamento.cliente_nome}</TableCell>
-                <TableCell>{agendamento.funcionario_nome}</TableCell>
-                <TableCell>{agendamento.servico_nome}</TableCell>
-                <TableCell>{agendamento.data_agendamento}</TableCell>
-                <TableCell>{agendamento.hora_agendamento}</TableCell>
-                <TableCell>
-                  <IconButton color="primary" aria-label="editar agendamento">
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    color="secondary"
-                    aria-label="excluir agendamento"
-                    onClick={() => removerAgendamento(agendamento.id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
     </div>
   );
 };
 
-export default Agendamentos;
+export default CalendarComponent;
