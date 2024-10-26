@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import moment from "moment";
@@ -18,26 +18,32 @@ import * as S from "./Agendamentos.style";
 
 const localizer = momentLocalizer(moment);
 
+const Status = ["pendente", "concluido", "em andamento"];
+
 const CalendarComponent = () => {
   const [events, setEvents] = useState([]); // Armazena agendamentos do backend
   const [clientes, setClientes] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
   const [servico, setServico] = useState("");
+  const [status, setStatus] = useState("");
   const [modalOpen, setModalOpen] = useState(false); // Controle do modal
   const [selectedSlot, setSelectedSlot] = useState(null); // Horário selecionado
   const [cliente, setCliente] = useState(""); // Dados do cliente no agendamento
   const [funcionario, setFuncionario] = useState(""); // Dados do funcionário
   const [error, setError] = useState("");
+  const [verAgendamento, setVerAgendamento] = useState(false);
+  const [agendamento, setAgendamento] = useState("");
 
   // Função para buscar agendamentos do backend
   const fetchAgendamentos = async () => {
     try {
       const response = await axios.get("http://localhost:8080/agendamentos");
       const agendamentos = response.data.map((agendamento) => ({
-        title: `Agendado: Cliente ${agendamento.cliente_id}`,
-        start: new Date(2024, 10, 23, 13, 0), // Formatação correta
-        end: new Date(2024, 10, 23, 13, 30),
+        title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico}`,
+        start: new Date(agendamento.data_agendamento), // Formatação correta
+        end: new Date(agendamento.data_final_agendamento),
+        agendamento,
       }));
       setEvents(agendamentos);
     } catch (error) {
@@ -86,10 +92,15 @@ const CalendarComponent = () => {
 
   // Função para abrir o modal e marcar um agendamento
   const handleSelectSlot = (slotInfo) => {
-    console.log(slotInfo);
     setSelectedSlot(slotInfo);
     setModalOpen(true);
   };
+
+  const handleClickEvent = useCallback((event) => {
+    console.log("handleClickEvent", event);
+    setAgendamento(event.agendamento);
+    setVerAgendamento(true);
+  }, []);
 
   // Função para fechar o modal
   const handleCloseModal = () => {
@@ -99,19 +110,63 @@ const CalendarComponent = () => {
     setFuncionario("");
   };
 
+  const handleCloseVerAgendamento = () => {
+    setVerAgendamento(false);
+    setAgendamento("");
+  };
+
+  const getFuncionario = useCallback(() => {
+    const func = funcionarios.filter(
+      (funcionario) => funcionario.id === agendamento.funcionario_id
+    );
+
+    return func[0]?.nome;
+  }, [agendamento.funcionario_id, funcionarios]);
+
   // Função para confirmar o agendamento
   const handleConfirmAgendamento = async () => {
+    const dataFinal = new Date(selectedSlot.start);
+    dataFinal.setMinutes(dataFinal.getMinutes() + 30);
+
     try {
       await axios.post("http://localhost:8080/agendamentos", {
         cliente_id: cliente,
         funcionario_id: funcionario,
         servico_id: servico,
-        data_hora: selectedSlot.start,
+        status,
+        data_agendamento: new Date(selectedSlot.start).toISOString(),
+        data_final_agendamento: dataFinal.toISOString(),
       });
+
       fetchAgendamentos(); // Atualiza a lista de agendamentos
       handleCloseModal(); // Fecha o modal após confirmação
     } catch (error) {
       console.error("Erro ao agendar: ", error);
+    }
+  };
+
+  const handleUpdateAgendamento = async (status) => {
+    try {
+      await axios.put(`http://localhost:8080/agendamentos/${agendamento.id}`, {
+        ...agendamento,
+        status: status,
+      });
+      fetchAgendamentos(); // Atualiza a lista de agendamentos
+      handleCloseVerAgendamento(); // Fecha o modal após confirmaç
+    } catch (error) {
+      console.error("Erro ao mudar status: ", error);
+    }
+  };
+
+  const handleDeleteAgendamento = async () => {
+    try {
+      await axios.delete(
+        `http://localhost:8080/agendamentos/${agendamento.id}`
+      );
+      fetchAgendamentos(); // Atualiza a lista de agendamentos
+      handleCloseVerAgendamento(); // Fecha o modal após confirmaç
+    } catch (error) {
+      console.error("Erro ao deletar: ", error);
     }
   };
 
@@ -143,6 +198,7 @@ const CalendarComponent = () => {
         localizer={localizer}
         events={events} // Mostra os eventos no calendário
         selectable // Permite selecionar um horário
+        onSelectEvent={handleClickEvent}
         onSelectSlot={handleSelectSlot} // Ação ao selecionar um horário
         defaultView="day"
         startAccessor="start"
@@ -203,6 +259,20 @@ const CalendarComponent = () => {
                 ))}
               </Select>
             </FormControl>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">Status</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={status}
+                label="Status"
+                onChange={(event) => setStatus(event?.target?.value)}
+              >
+                {Status.map((servico, _) => (
+                  <MenuItem value={servico}>{servico}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Typography gutterBottom>
               Horário Selecionado:{" "}
               {dayjs(selectedSlot?.start).format("DD/MM/YYYY HH:mm")}
@@ -217,6 +287,69 @@ const CalendarComponent = () => {
               Confirmar Agendamento
             </Button>
           </S.formulario>
+        </S.ModalStyle>
+      </Modal>
+      <Modal open={verAgendamento} onClose={handleCloseVerAgendamento}>
+        <S.ModalStyle>
+          <Typography variant="h6" gutterBottom>
+            Vizualizar Agendamento
+          </Typography>
+          <S.AgendamentoDetalhes>
+            <S.labels id="demo-simple-select-label">
+              Cliente: {agendamento.nome_cliente}
+            </S.labels>
+            <S.labels id="demo-simple-select-label">
+              Funcionario: {getFuncionario(funcionarios)}
+            </S.labels>
+            <S.labels id="demo-simple-select-label">
+              Serviço: {agendamento.nome_servico}
+            </S.labels>
+            <S.labels id="demo-simple-select-label">
+              Status: {agendamento.status}
+            </S.labels>
+            <Typography gutterBottom>
+              Horário de inicio:{" "}
+              {dayjs(agendamento?.data_agendamento).format("DD/MM/YYYY HH:mm")}
+            </Typography>
+            <Typography gutterBottom>
+              Horário de termino:{" "}
+              {dayjs(agendamento?.data_final_agendamento).format(
+                "DD/MM/YYYY HH:mm"
+              )}
+            </Typography>
+            <S.BotoesModal>
+              <Button
+                id="em andamento-select-btn"
+                variant="contained"
+                color="secondary"
+                onClick={() => handleUpdateAgendamento("em andamento")}
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                Em Andamento
+              </Button>
+              <Button
+                id="concluido"
+                variant="contained"
+                color="primary"
+                onClick={() => handleUpdateAgendamento("concluido")}
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                Concluído
+              </Button>
+              <Button
+                id="concluido"
+                variant="contained"
+                color="error"
+                onClick={handleDeleteAgendamento}
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                deletar
+              </Button>
+            </S.BotoesModal>
+          </S.AgendamentoDetalhes>
         </S.ModalStyle>
       </Modal>
     </div>

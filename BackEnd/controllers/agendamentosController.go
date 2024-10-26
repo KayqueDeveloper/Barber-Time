@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const queryGetAll = "   SELECT a.id AS id, a.cliente_id, a.funcionario_id, a.servico_id, a.data_agendamento, a.data_final_agendamento, a.status, a.criado_em, c.nome AS nome_cliente, s.nome as nome_servico FROM barbearia.agendamentos a LEFT JOIN barbearia.clientes c ON c.id = a.cliente_id left join barbearia.servicos s on s.id = a.servico_id "
+
 // Listar todos os agendamentos
 func ListarAgendamentos(w http.ResponseWriter, r *http.Request) {
 	db, err := db.Conectar()
@@ -21,7 +23,7 @@ func ListarAgendamentos(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, cliente_id, funcionario_id, servico_id, data_agendamento, hora_agendamento, status, criado_em FROM barbearia.agendamentos")
+	rows, err := db.Query(queryGetAll)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
@@ -31,8 +33,9 @@ func ListarAgendamentos(w http.ResponseWriter, r *http.Request) {
 	var agendamentos []models.Agendamento
 	for rows.Next() {
 		var agendamento models.Agendamento
-		err := rows.Scan(&agendamento.ID, &agendamento.ClienteID, &agendamento.FuncionarioID, &agendamento.ServicoID, &agendamento.DataAgendamento, &agendamento.HoraAgendamento, &agendamento.Status, &agendamento.CriadoEm)
+		err := rows.Scan(&agendamento.ID, &agendamento.ClienteID, &agendamento.FuncionarioID, &agendamento.ServicoID, &agendamento.DataAgendamento, &agendamento.DataFinalAgendamento, &agendamento.Status, &agendamento.CriadoEm, &agendamento.NomeCliente, &agendamento.NomeServico)
 		if err != nil {
+			fmt.Println("Error:", err)
 			http.Error(w, "Erro ao escanear dados", http.StatusInternalServerError)
 			return
 		}
@@ -59,8 +62,8 @@ func BuscarAgendamento(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	var agendamento models.Agendamento
-	err = db.QueryRow("SELECT id, cliente_id, funcionario_id, servico_id, data_agendamento, hora_agendamento, status, criado_em FROM barbearia.agendamentos WHERE id = $1", id).Scan(
-		&agendamento.ID, &agendamento.ClienteID, &agendamento.FuncionarioID, &agendamento.ServicoID, &agendamento.DataAgendamento, &agendamento.HoraAgendamento, &agendamento.Status, &agendamento.CriadoEm)
+	err = db.QueryRow("SELECT id, cliente_id, funcionario_id, servico_id, data_agendamento, data_final_agendamento, status, criado_em FROM barbearia.agendamentos WHERE id = $1", id).Scan(
+		&agendamento.ID, &agendamento.ClienteID, &agendamento.FuncionarioID, &agendamento.ServicoID, &agendamento.DataAgendamento, &agendamento.DataFinalAgendamento, &agendamento.Status, &agendamento.CriadoEm)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Agendamento não encontrado", http.StatusNotFound)
@@ -90,8 +93,8 @@ func CriarAgendamento(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	err = db.QueryRow(
-		"INSERT INTO barbearia.agendamentos (cliente_id, funcionario_id, servico_id, data_agendamento, hora_agendamento, status, criado_em) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id",
-		agendamento.ClienteID, agendamento.FuncionarioID, agendamento.ServicoID, agendamento.DataAgendamento, agendamento.HoraAgendamento, agendamento.Status,
+		"INSERT INTO barbearia.agendamentos (cliente_id, funcionario_id, servico_id, data_agendamento, data_final_agendamento, status, criado_em) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id",
+		agendamento.ClienteID, agendamento.FuncionarioID, agendamento.ServicoID, agendamento.DataAgendamento, agendamento.DataFinalAgendamento, agendamento.Status,
 	).Scan(&agendamento.ID)
 
 	if err != nil {
@@ -127,8 +130,8 @@ func AtualizarAgendamento(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	_, err = db.Exec(
-		"UPDATE barbearia.agendamentos SET cliente_id = $1, funcionario_id = $2, servico_id = $3, data_agendamento = $4, hora_agendamento = $5, status = $6 WHERE id = $7",
-		agendamento.ClienteID, agendamento.FuncionarioID, agendamento.ServicoID, agendamento.DataAgendamento, agendamento.HoraAgendamento, agendamento.Status, id,
+		"UPDATE barbearia.agendamentos SET cliente_id = $1, funcionario_id = $2, servico_id = $3, data_agendamento = $4, data_final_agendamento = $5, status = $6 WHERE id = $7",
+		agendamento.ClienteID, agendamento.FuncionarioID, agendamento.ServicoID, agendamento.DataAgendamento, agendamento.DataFinalAgendamento, agendamento.Status, id,
 	)
 
 	if err != nil {
