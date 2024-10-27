@@ -20,13 +20,34 @@ func ListarClientes(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, nome, telefone, email, criado_em FROM barbearia.clientes")
+	// Lendo os parâmetros de paginação e pesquisa
+	pageParam := r.URL.Query().Get("page")
+	limitParam := r.URL.Query().Get("limit")
+	search := r.URL.Query().Get("search")
+
+	// Configuração de paginação padrão
+	page, err := strconv.Atoi(pageParam)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitParam)
+	if err != nil || limit < 1 {
+		limit = 5 // Define o número de clientes por página (ajuste conforme necessário)
+	}
+
+	// Offset para calcular a posição inicial da página
+	offset := (page - 1) * limit
+
+	// Query com filtro de pesquisa e paginação
+	query := "SELECT id, nome, telefone, email, criado_em FROM barbearia.clientes WHERE nome ILIKE '%' || $1 || '%' ORDER BY nome LIMIT $2 OFFSET $3"
+	rows, err := db.Query(query, search, limit, offset)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
+	// Construindo a lista de clientes
 	var clientes []models.Cliente
 	for rows.Next() {
 		var cliente models.Cliente
@@ -38,7 +59,27 @@ func ListarClientes(w http.ResponseWriter, r *http.Request) {
 		clientes = append(clientes, cliente)
 	}
 
-	json.NewEncoder(w).Encode(clientes)
+	// Contagem total de clientes para a paginação
+	var totalClientes int
+	err = db.QueryRow("SELECT COUNT(*) FROM barbearia.clientes WHERE nome ILIKE '%' || $1 || '%'", search).Scan(&totalClientes)
+	if err != nil {
+		http.Error(w, "Erro ao contar clientes", http.StatusInternalServerError)
+		return
+	}
+
+	// Cálculo do número total de páginas
+	totalPages := (totalClientes + limit - 1) / limit // Arredonda para cima
+
+	// Criação da resposta com clientes e informações de paginação
+	response := map[string]interface{}{
+		"clientes":    clientes,
+		"totalPages":  totalPages,
+		"currentPage": page,
+	}
+
+	// Enviar resposta em JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Buscar um cliente específico por ID

@@ -1,4 +1,3 @@
-// Clientes.js
 import React, { useEffect, useState } from "react";
 import {
   Button,
@@ -18,35 +17,58 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
+import Pagination from "@mui/material/Pagination";
 import "./Clientes.css";
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
-  const [open, setOpen] = useState(false); // Estado para controlar o modal
+  const [cliente, setCliente] = useState({});
+  const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
+  const [page, setPage] = useState(1); // Página atual
+  const [totalPages, setTotalPages] = useState(1); // Total de páginas
+
+  const fetchClientes = async (page, searchTerm = "") => {
+    try {
+      const response = await axios.get("http://localhost:8080/clientes", {
+        params: {
+          page,
+          limit: 5,
+          search: searchTerm,
+        },
+      });
+      setClientes(response?.data?.clientes);
+      setTotalPages(response?.data?.totalPages);
+      console.log(response.data.totalPages);
+    } catch (error) {
+      setError("Erro ao buscar clientes");
+    }
+  };
 
   useEffect(() => {
-    const fetchClientes = async () => {
-      try {
-        const response = await axios.get("http://localhost:8080/clientes");
-        setClientes(response.data);
-      } catch (error) {
-        setError("Erro ao buscar clientes");
-      }
-    };
+    fetchClientes(page, searchTerm);
+  }, [page, searchTerm]);
 
-    fetchClientes();
-  }, []);
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value); // Atualiza o termo de pesquisa
+    setPage(1); // Reseta a página para a primeira em caso de nova pesquisa
+  };
 
-  // Função para abrir o modal
+  const handlePageChange = (event, value) => {
+    setPage(value); // Atualiza a página atual
+  };
+
   const handleOpen = () => setOpen(true);
-  // Função para fechar o modal
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false);
+    setOpenEdit(false);
+  };
 
-  // Função para adicionar cliente
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -55,8 +77,8 @@ const Clientes = () => {
         telefone,
         email,
       });
-      setClientes([...clientes, response.data]); // Atualizar a lista de clientes
-      handleClose(); // Fechar o modal
+      setClientes([...clientes, response.data]);
+      handleClose();
       setNome("");
       setTelefone("");
       setEmail("");
@@ -65,17 +87,45 @@ const Clientes = () => {
     }
   };
 
-  // Função para remover cliente
+  const handleSubmitEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(
+        `http://localhost:8080/clientes/${cliente?.id}`,
+        {
+          nome,
+          telefone,
+          email,
+        }
+      );
+      setCliente({});
+      handleClose();
+      setNome("");
+      setTelefone("");
+      setEmail("");
+      fetchClientes(page, searchTerm);
+    } catch (error) {
+      setError("Erro ao editar cliente");
+    }
+  };
+
+  const handleOpenEdit = async (cliente) => {
+    setCliente(cliente);
+    setNome(cliente.nome);
+    setTelefone(cliente.telefone);
+    setEmail(cliente.email);
+    setOpenEdit(true);
+  };
+
   const removerCliente = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/clientes/${id}`);
-      setClientes(clientes.filter((cliente) => cliente.id !== id));
+      setClientes(clientes?.filter((cliente) => cliente.id !== id));
     } catch (error) {
       setError("Erro ao remover cliente");
     }
   };
 
-  // Estilo para o modal
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -94,11 +144,24 @@ const Clientes = () => {
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
 
-      <Button variant="contained" color="primary" onClick={handleOpen}>
-        Adicionar Cliente
-      </Button>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        marginBottom={2}
+      >
+        <TextField
+          label="Buscar por Nome"
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="Digite o nome do cliente"
+          variant="outlined"
+        />
+        <Button variant="contained" color="primary" onClick={handleOpen}>
+          Adicionar Cliente
+        </Button>
+      </Box>
 
-      {/* Modal para adicionar cliente */}
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
           <Typography variant="h6" component="h2">
@@ -143,7 +206,59 @@ const Clientes = () => {
         </Box>
       </Modal>
 
-      {/* Tabela de Clientes */}
+      <Modal open={openEdit} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" component="h2">
+            Editar Cliente
+          </Typography>
+          <form onSubmit={handleSubmitEdit}>
+            <TextField
+              fullWidth
+              label="Nome"
+              value={cliente?.nome}
+              onChange={(e) => {
+                setCliente({ ...cliente, nome: e.target.value });
+                setNome(e.target.value);
+              }}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Telefone"
+              value={cliente?.telefone}
+              onChange={(e) => {
+                setCliente({ ...cliente, telefone: e.target.value });
+                setTelefone(e.target.value);
+              }}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={cliente?.email}
+              onChange={(e) => {
+                setCliente({ ...cliente, email: e.target.value });
+                setEmail(e.target.value);
+              }}
+              margin="normal"
+              required
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              style={{ marginTop: "16px" }}
+            >
+              Salvar
+            </Button>
+          </form>
+        </Box>
+      </Modal>
+
       <TableContainer component={Paper} style={{ marginTop: "20px" }}>
         <Table>
           <TableHead>
@@ -155,21 +270,25 @@ const Clientes = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {clientes.map((cliente) => (
+            {clientes?.map((cliente) => (
               <TableRow key={cliente.id}>
                 <TableCell>{cliente.nome}</TableCell>
                 <TableCell>{cliente.telefone}</TableCell>
                 <TableCell>{cliente.email}</TableCell>
                 <TableCell>
-                  <IconButton color="primary" aria-label="editar cliente">
-                    <EditIcon/>
+                  <IconButton
+                    color="primary"
+                    aria-label="editar cliente"
+                    onClick={() => handleOpenEdit(cliente)}
+                  >
+                    <EditIcon />
                   </IconButton>
                   <IconButton
                     color="secondary"
                     aria-label="excluir cliente"
                     onClick={() => removerCliente(cliente.id)}
                   >
-                    <DeleteIcon/>
+                    <DeleteIcon />
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -177,6 +296,15 @@ const Clientes = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Paginação */}
+      <Pagination
+        count={totalPages}
+        page={page}
+        onChange={handlePageChange}
+        color="primary"
+        style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}
+      />
     </div>
   );
 };
