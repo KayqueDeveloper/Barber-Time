@@ -20,13 +20,34 @@ func ListarServicos(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, nome, preco, duracao, criado_em FROM barbearia.servicos")
+	// Lendo os parâmetros de paginação e pesquisa
+	pageParam := r.URL.Query().Get("page")
+	limitParam := r.URL.Query().Get("limit")
+	search := r.URL.Query().Get("search")
+
+	// Definindo paginação padrão
+	page, err := strconv.Atoi(pageParam)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitParam)
+	if err != nil || limit < 1 {
+		limit = 5 // Número padrão de serviços por página
+	}
+
+	// Calcula o offset com base na página e no limite
+	offset := (page - 1) * limit
+
+	// Construindo a query com filtro e paginação
+	query := "SELECT id, nome, preco, duracao, criado_em FROM barbearia.servicos WHERE nome ILIKE '%' || $1 || '%' ORDER BY nome LIMIT $2 OFFSET $3"
+	rows, err := db.Query(query, search, limit, offset)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
+	// Preenchendo a lista de serviços
 	var servicos []models.Servico
 	for rows.Next() {
 		var servico models.Servico
@@ -38,7 +59,27 @@ func ListarServicos(w http.ResponseWriter, r *http.Request) {
 		servicos = append(servicos, servico)
 	}
 
-	json.NewEncoder(w).Encode(servicos)
+	// Contagem total de serviços para paginação
+	var totalServicos int
+	err = db.QueryRow("SELECT COUNT(*) FROM barbearia.servicos WHERE nome ILIKE '%' || $1 || '%'", search).Scan(&totalServicos)
+	if err != nil {
+		http.Error(w, "Erro ao contar serviços", http.StatusInternalServerError)
+		return
+	}
+
+	// Calcula o número total de páginas
+	totalPages := (totalServicos + limit - 1) / limit
+
+	// Monta a resposta com serviços e informações de paginação
+	response := map[string]interface{}{
+		"servicos":    servicos,
+		"totalPages":  totalPages,
+		"currentPage": page,
+	}
+
+	// Envia a resposta em JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Buscar um serviço específico por ID

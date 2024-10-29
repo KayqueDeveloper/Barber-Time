@@ -19,7 +19,24 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, nome, especialidade, telefone, criado_em FROM barbearia.funcionarios")
+	// Lendo os parâmetros de paginação e pesquisa
+	pageParam := r.URL.Query().Get("page")
+	limitParam := r.URL.Query().Get("limit")
+	search := r.URL.Query().Get("search")
+
+	page, err := strconv.Atoi(pageParam)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitParam)
+	if err != nil || limit < 1 {
+		limit = 5 // Limite de funcionários por página
+	}
+
+	offset := (page - 1) * limit
+
+	query := "SELECT id, nome, especialidade, telefone FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%' ORDER BY nome LIMIT $2 OFFSET $3"
+	rows, err := db.Query(query, search, limit, offset)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
@@ -29,7 +46,7 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	var funcionarios []models.Funcionario
 	for rows.Next() {
 		var funcionario models.Funcionario
-		err := rows.Scan(&funcionario.ID, &funcionario.Nome, &funcionario.Especialidade, &funcionario.Telefone, &funcionario.CriadoEm)
+		err := rows.Scan(&funcionario.ID, &funcionario.Nome, &funcionario.Especialidade, &funcionario.Telefone)
 		if err != nil {
 			http.Error(w, "Erro ao escanear dados", http.StatusInternalServerError)
 			return
@@ -37,7 +54,23 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 		funcionarios = append(funcionarios, funcionario)
 	}
 
-	json.NewEncoder(w).Encode(funcionarios)
+	var totalFuncionarios int
+	err = db.QueryRow("SELECT COUNT(*) FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%'", search).Scan(&totalFuncionarios)
+	if err != nil {
+		http.Error(w, "Erro ao contar funcionários", http.StatusInternalServerError)
+		return
+	}
+
+	totalPages := (totalFuncionarios + limit - 1) / limit
+
+	response := map[string]interface{}{
+		"funcionarios": funcionarios,
+		"totalPages":   totalPages,
+		"currentPage":  page,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Buscar um funcionário específico por ID

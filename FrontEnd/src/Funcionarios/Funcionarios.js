@@ -1,4 +1,3 @@
-// Funcionarios.js
 import React, { useEffect, useState } from "react";
 import {
   Button,
@@ -14,6 +13,7 @@ import {
   TextField,
   Typography,
   IconButton,
+  Pagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -22,32 +22,63 @@ import "./Funcionarios.css";
 
 const Funcionarios = () => {
   const [funcionarios, setFuncionarios] = useState([]);
-  const [open, setOpen] = useState(false); // Estado para controlar o modal
+  const [funcionario, setFuncionario] = useState({});
+  const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
   const [nome, setNome] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [telefone, setTelefone] = useState("");
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
+  const [page, setPage] = useState(1); // Página atual
+  const [totalPages, setTotalPages] = useState(1); // Total de páginas
 
-  // Buscar funcionários do backend quando o componente é montado
+  const fetchFuncionarios = async (page, searchTerm = "") => {
+    try {
+      const response = await axios.get("http://localhost:8080/funcionarios", {
+        params: {
+          page,
+          search: searchTerm,
+        },
+      });
+      setFuncionarios(response.data.funcionarios);
+      setTotalPages(response.data.totalPages);
+    } catch (error) {
+      setError("Erro ao buscar funcionários");
+    }
+  };
+
   useEffect(() => {
-    const fetchFuncionarios = async () => {
-      try {
-        const response = await axios.get("http://localhost:8080/funcionarios");
-        setFuncionarios(response.data);
-      } catch (error) {
-        setError("Erro ao buscar funcionários");
-      }
-    };
+    fetchFuncionarios(page, searchTerm);
+  }, [page, searchTerm]);
 
-    fetchFuncionarios();
-  }, []);
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(1); // Reseta para a primeira página ao realizar uma nova pesquisa
+  };
 
-  // Função para abrir o modal
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
   const handleOpen = () => setOpen(true);
-  // Função para fechar o modal
   const handleClose = () => setOpen(false);
 
-  // Função para adicionar funcionário
+  const handleOpenEdit = (funcionario) => {
+    setFuncionario(funcionario);
+    setNome(funcionario?.nome);
+    setTelefone(funcionario?.telefone);
+    setEspecialidade(funcionario?.especialidade);
+    setOpenEdit(true);
+  };
+
+  const handleCloseEdit = () => {
+    setOpenEdit(false);
+    setNome("");
+    setEspecialidade("");
+    setTelefone("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -56,8 +87,8 @@ const Funcionarios = () => {
         especialidade,
         telefone,
       });
-      setFuncionarios([...funcionarios, response.data]); // Atualizar a lista de funcionários
-      handleClose(); // Fechar o modal
+      setFuncionarios([...funcionarios, response?.data]);
+      handleClose();
       setNome("");
       setEspecialidade("");
       setTelefone("");
@@ -66,17 +97,38 @@ const Funcionarios = () => {
     }
   };
 
-  // Função para remover funcionário
+  const handleSubmitEdit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios?.put(
+        `http://localhost:8080/funcionarios/${funcionario?.id}`,
+        {
+          nome,
+          telefone,
+          especialidade,
+        }
+      );
+      handleCloseEdit();
+      setFuncionario({});
+      setNome("");
+      setTelefone("");
+      fetchFuncionarios(page, searchTerm);
+    } catch (error) {
+      setError("Erro ao editar funcionario");
+    }
+  };
+
   const removerFuncionario = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/funcionarios/${id}`);
-      setFuncionarios(funcionarios.filter((funcionario) => funcionario.id !== id));
+      setFuncionarios(
+        funcionarios.filter((funcionario) => funcionario?.id !== id)
+      );
     } catch (error) {
       setError("Erro ao remover funcionário");
     }
   };
 
-  // Estilo para o modal
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -95,11 +147,24 @@ const Funcionarios = () => {
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
 
-      <Button variant="contained" color="primary" onClick={handleOpen}>
-        Adicionar Funcionário
-      </Button>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        marginBottom={2}
+      >
+        <TextField
+          label="Buscar por Nome"
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="Digite o nome do funcionário"
+          variant="outlined"
+        />
+        <Button variant="contained" color="primary" onClick={handleOpen}>
+          Adicionar Funcionário
+        </Button>
+      </Box>
 
-      {/* Modal para adicionar funcionário */}
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
           <Typography variant="h6" component="h2">
@@ -110,7 +175,7 @@ const Funcionarios = () => {
               fullWidth
               label="Nome"
               value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              onChange={(e) => setNome(e?.target?.value)}
               margin="normal"
               required
             />
@@ -118,7 +183,7 @@ const Funcionarios = () => {
               fullWidth
               label="Especialidade"
               value={especialidade}
-              onChange={(e) => setEspecialidade(e.target.value)}
+              onChange={(e) => setEspecialidade(e?.target?.value)}
               margin="normal"
               required
             />
@@ -126,7 +191,7 @@ const Funcionarios = () => {
               fullWidth
               label="Telefone"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(e?.target?.value)}
               margin="normal"
               required
             />
@@ -143,7 +208,61 @@ const Funcionarios = () => {
         </Box>
       </Modal>
 
-      {/* Tabela de Funcionários */}
+      <Modal open={openEdit} onClose={handleCloseEdit}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" component="h2">
+            Editar Funcionario
+          </Typography>
+          <form onSubmit={handleSubmitEdit}>
+            <TextField
+              fullWidth
+              label="Nome"
+              value={funcionario?.nome}
+              onChange={(e) => {
+                setFuncionario({ ...funcionario, nome: e?.target?.value });
+                setNome(e.target.value);
+              }}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Telefone"
+              value={funcionario?.telefone}
+              onChange={(e) => {
+                setFuncionario({ ...funcionario, telefone: e?.target?.value });
+                setTelefone(e.target.value);
+              }}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Especialidade"
+              value={funcionario?.especialidade}
+              onChange={(e) => {
+                setFuncionario({
+                  ...funcionario,
+                  especialidade: e?.target?.value,
+                });
+                setEspecialidade(e.target.value);
+              }}
+              margin="normal"
+              required
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              style={{ marginTop: "16px" }}
+            >
+              Salvar
+            </Button>
+          </form>
+        </Box>
+      </Modal>
+
       <TableContainer component={Paper} style={{ marginTop: "20px" }}>
         <Table>
           <TableHead>
@@ -155,19 +274,23 @@ const Funcionarios = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {funcionarios.map((funcionario) => (
-              <TableRow key={funcionario.id}>
-                <TableCell>{funcionario.nome}</TableCell>
-                <TableCell>{funcionario.especialidade}</TableCell>
-                <TableCell>{funcionario.telefone}</TableCell>
+            {funcionarios?.map((funcionario) => (
+              <TableRow key={funcionario?.id}>
+                <TableCell>{funcionario?.nome}</TableCell>
+                <TableCell>{funcionario?.especialidade}</TableCell>
+                <TableCell>{funcionario?.telefone}</TableCell>
                 <TableCell>
-                  <IconButton color="primary" aria-label="editar funcionário">
+                  <IconButton
+                    color="primary"
+                    aria-label="editar funcionário"
+                    onClick={() => handleOpenEdit(funcionario)}
+                  >
                     <EditIcon />
                   </IconButton>
                   <IconButton
                     color="secondary"
                     aria-label="excluir funcionário"
-                    onClick={() => removerFuncionario(funcionario.id)}
+                    onClick={() => removerFuncionario(funcionario?.id)}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -177,6 +300,15 @@ const Funcionarios = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Paginação */}
+      <Pagination
+        count={totalPages}
+        page={page}
+        onChange={handlePageChange}
+        color="primary"
+        style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}
+      />
     </div>
   );
 };

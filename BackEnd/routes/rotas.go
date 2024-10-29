@@ -42,6 +42,10 @@ func ConfigurarRotas() *mux.Router {
 	r.HandleFunc("/configuracoes", controllers.BuscarConfiguracao).Methods("GET")
 	r.HandleFunc("/configuracoes", controllers.AtualizarConfiguracao).Methods("PUT")
 
+	r.HandleFunc("/relatorios/agendamentos-por-mes", controllers.AgendamentosPorMes).Methods("GET")
+	r.HandleFunc("/relatorios/servicos-mais-populares", controllers.ServicosMaisPopulares).Methods("GET")
+	r.HandleFunc("/relatorios/funcionarios-mais-ativos", controllers.FuncionariosMaisAtivos).Methods("GET")
+
 	r.HandleFunc("/login", handlers.LoginHandler).Methods("POST")
 
 	return r

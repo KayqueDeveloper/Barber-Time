@@ -13,7 +13,7 @@ import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import "./Relatorios.css";
-import 'chart.js/auto'; // Import necessário para o Chart.js
+import "chart.js/auto"; // Import necessário para o Chart.js
 
 const Relatorios = () => {
   const [loading, setLoading] = useState(true);
@@ -27,11 +27,15 @@ const Relatorios = () => {
   // Função para buscar os dados dos relatórios do backend
   const fetchRelatorios = async () => {
     try {
-      const [agendamentosRes, servicosRes, funcionariosRes] = await Promise.all([
-        axios.get("http://localhost:8080/relatorios/agendamentos-por-mes"),
-        axios.get("http://localhost:8080/relatorios/servicos-mais-populares"),
-        axios.get("http://localhost:8080/relatorios/funcionarios-mais-ativos"),
-      ]);
+      const [agendamentosRes, servicosRes, funcionariosRes] = await Promise.all(
+        [
+          axios.get("http://localhost:8080/relatorios/agendamentos-por-mes"),
+          axios.get("http://localhost:8080/relatorios/servicos-mais-populares"),
+          axios.get(
+            "http://localhost:8080/relatorios/funcionarios-mais-ativos"
+          ),
+        ]
+      );
 
       setAgendamentosPorMes(agendamentosRes.data);
       setServicosMaisPopulares(servicosRes.data);
@@ -62,7 +66,14 @@ const Relatorios = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -112,7 +123,9 @@ const Relatorios = () => {
     datasets: [
       {
         label: "Funcionários Mais Ativos",
-        data: funcionariosMaisAtivos?.map((funcionario) => funcionario.agendamentos),
+        data: funcionariosMaisAtivos?.map(
+          (funcionario) => funcionario.agendamentos
+        ),
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         borderColor: "rgba(75, 192, 192, 1)",
         borderWidth: 1,
@@ -128,7 +141,12 @@ const Relatorios = () => {
       {error && <Typography color="error">{error}</Typography>}
 
       {/* Botão para gerar PDF */}
-      <Button variant="contained" color="secondary" onClick={gerarPDF} style={{ marginBottom: "20px" }}>
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={gerarPDF}
+        style={{ marginBottom: "20px" }}
+      >
         Gerar PDF
       </Button>
 

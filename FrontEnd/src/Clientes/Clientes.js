@@ -90,14 +90,11 @@ const Clientes = () => {
   const handleSubmitEdit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(
-        `http://localhost:8080/clientes/${cliente?.id}`,
-        {
-          nome,
-          telefone,
-          email,
-        }
-      );
+      await axios?.put(`http://localhost:8080/clientes/${cliente?.id}`, {
+        nome,
+        telefone,
+        email,
+      });
       setCliente({});
       handleClose();
       setNome("");
@@ -111,16 +108,16 @@ const Clientes = () => {
 
   const handleOpenEdit = async (cliente) => {
     setCliente(cliente);
-    setNome(cliente.nome);
-    setTelefone(cliente.telefone);
-    setEmail(cliente.email);
+    setNome(cliente?.nome);
+    setTelefone(cliente?.telefone);
+    setEmail(cliente?.email);
     setOpenEdit(true);
   };
 
   const removerCliente = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/clientes/${id}`);
-      setClientes(clientes?.filter((cliente) => cliente.id !== id));
+      setClientes(clientes?.filter((cliente) => cliente?.id !== id));
     } catch (error) {
       setError("Erro ao remover cliente");
     }
@@ -172,7 +169,7 @@ const Clientes = () => {
               fullWidth
               label="Nome"
               value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              onChange={(e) => setNome(e?.target?.value)}
               margin="normal"
               required
             />
@@ -180,7 +177,7 @@ const Clientes = () => {
               fullWidth
               label="Telefone"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(e?.target?.value)}
               margin="normal"
               required
             />
@@ -189,7 +186,7 @@ const Clientes = () => {
               label="Email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e?.target?.value)}
               margin="normal"
               required
             />
@@ -217,7 +214,7 @@ const Clientes = () => {
               label="Nome"
               value={cliente?.nome}
               onChange={(e) => {
-                setCliente({ ...cliente, nome: e.target.value });
+                setCliente({ ...cliente, nome: e?.target?.value });
                 setNome(e.target.value);
               }}
               margin="normal"
@@ -228,7 +225,7 @@ const Clientes = () => {
               label="Telefone"
               value={cliente?.telefone}
               onChange={(e) => {
-                setCliente({ ...cliente, telefone: e.target.value });
+                setCliente({ ...cliente, telefone: e?.target?.value });
                 setTelefone(e.target.value);
               }}
               margin="normal"
@@ -240,7 +237,7 @@ const Clientes = () => {
               type="email"
               value={cliente?.email}
               onChange={(e) => {
-                setCliente({ ...cliente, email: e.target.value });
+                setCliente({ ...cliente, email: e?.target?.value });
                 setEmail(e.target.value);
               }}
               margin="normal"
@@ -271,10 +268,10 @@ const Clientes = () => {
           </TableHead>
           <TableBody>
             {clientes?.map((cliente) => (
-              <TableRow key={cliente.id}>
-                <TableCell>{cliente.nome}</TableCell>
-                <TableCell>{cliente.telefone}</TableCell>
-                <TableCell>{cliente.email}</TableCell>
+              <TableRow key={cliente?.id}>
+                <TableCell>{cliente?.nome}</TableCell>
+                <TableCell>{cliente?.telefone}</TableCell>
+                <TableCell>{cliente?.email}</TableCell>
                 <TableCell>
                   <IconButton
                     color="primary"
@@ -286,7 +283,7 @@ const Clientes = () => {
                   <IconButton
                     color="secondary"
                     aria-label="excluir cliente"
-                    onClick={() => removerCliente(cliente.id)}
+                    onClick={() => removerCliente(cliente?.id)}
                   >
                     <DeleteIcon />
                   </IconButton>

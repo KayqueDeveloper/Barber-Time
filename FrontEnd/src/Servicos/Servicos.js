@@ -1,4 +1,3 @@
-// Servicos.js
 import React, { useEffect, useState } from "react";
 import {
   Button,
@@ -14,6 +13,7 @@ import {
   TextField,
   Typography,
   IconButton,
+  Pagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -22,32 +22,63 @@ import "./Servicos.css";
 
 const Servicos = () => {
   const [servicos, setServicos] = useState([]);
-  const [open, setOpen] = useState(false); // Estado para controlar o modal
+  const [servico, setServico] = useState({});
+  const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
   const [nome, setNome] = useState("");
   const [preco, setPreco] = useState("");
   const [duracao, setDuracao] = useState("");
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Buscar serviços do backend quando o componente é montado
+  const fetchServicos = async (page, searchTerm = "") => {
+    try {
+      const response = await axios.get("http://localhost:8080/servicos", {
+        params: {
+          page,
+          search: searchTerm,
+        },
+      });
+      setServicos(response.data.servicos);
+      setTotalPages(response.data.totalPages);
+    } catch (error) {
+      setError("Erro ao buscar serviços");
+    }
+  };
+
   useEffect(() => {
-    const fetchServicos = async () => {
-      try {
-        const response = await axios.get("http://localhost:8080/servicos");
-        setServicos(response.data);
-      } catch (error) {
-        setError("Erro ao buscar serviços");
-      }
-    };
+    fetchServicos(page, searchTerm);
+  }, [page, searchTerm]);
 
-    fetchServicos();
-  }, []);
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(1); // Reseta para a primeira página ao realizar uma nova pesquisa
+  };
 
-  // Função para abrir o modal
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
   const handleOpen = () => setOpen(true);
-  // Função para fechar o modal
   const handleClose = () => setOpen(false);
 
-  // Função para adicionar serviço
+  const handleOpenEdit = (servico) => {
+    setServico(servico);
+    setNome(servico?.nome);
+    setPreco(servico?.preco);
+    setDuracao(servico?.duracao);
+    setOpenEdit(true);
+  };
+
+  const handleCloseEdit = () => {
+    setOpenEdit(false);
+    setNome("");
+    setPreco("");
+    setDuracao("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -56,8 +87,8 @@ const Servicos = () => {
         preco,
         duracao,
       });
-      setServicos([...servicos, response.data]); // Atualizar a lista de serviços
-      handleClose(); // Fechar o modal
+      setServicos([...servicos, response?.data]);
+      handleClose();
       setNome("");
       setPreco("");
       setDuracao("");
@@ -66,7 +97,23 @@ const Servicos = () => {
     }
   };
 
-  // Função para remover serviço
+  const handleSubmitEdit = async (e) => {
+    e.preventDefault();
+
+    try {
+      await axios.put(`http://localhost:8080/servicos/${servico?.id}`, {
+        nome,
+        preco,
+        duracao,
+      });
+      fetchServicos(page, searchTerm);
+    } catch (error) {
+      setError("Erro ao editar serviço");
+    }
+    handleCloseEdit();
+    setServico({});
+  };
+
   const removerServico = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/servicos/${id}`);
@@ -76,7 +123,6 @@ const Servicos = () => {
     }
   };
 
-  // Estilo para o modal
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -95,11 +141,24 @@ const Servicos = () => {
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
 
-      <Button variant="contained" color="primary" onClick={handleOpen}>
-        Adicionar Serviço
-      </Button>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        marginBottom={2}
+      >
+        <TextField
+          label="Buscar por Nome"
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="Digite o nome do serviço"
+          variant="outlined"
+        />
+        <Button variant="contained" color="primary" onClick={handleOpen}>
+          Adicionar Serviço
+        </Button>
+      </Box>
 
-      {/* Modal para adicionar serviço */}
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
           <Typography variant="h6" component="h2">
@@ -143,7 +202,49 @@ const Servicos = () => {
         </Box>
       </Modal>
 
-      {/* Tabela de Serviços */}
+      <Modal open={openEdit} onClose={handleCloseEdit}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" component="h2">
+            Editar Serviço
+          </Typography>
+          <form onSubmit={handleSubmitEdit}>
+            <TextField
+              fullWidth
+              label="Nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Preço"
+              value={preco}
+              onChange={(e) => setPreco(e.target.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Duração (min)"
+              value={duracao}
+              onChange={(e) => setDuracao(e.target.value)}
+              margin="normal"
+              required
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              style={{ marginTop: "16px" }}
+            >
+              Salvar
+            </Button>
+          </form>
+        </Box>
+      </Modal>
+
       <TableContainer component={Paper} style={{ marginTop: "20px" }}>
         <Table>
           <TableHead>
@@ -155,13 +256,19 @@ const Servicos = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {servicos.map((servico) => (
+            {servicos?.map((servico) => (
               <TableRow key={servico.id}>
                 <TableCell>{servico.nome}</TableCell>
                 <TableCell>{servico.preco}</TableCell>
                 <TableCell>{servico.duracao} min</TableCell>
                 <TableCell>
-                  <IconButton color="primary" aria-label="editar serviço">
+                  <IconButton
+                    color="primary"
+                    aria-label="editar serviço"
+                    onClick={() => {
+                      handleOpenEdit(servico);
+                    }}
+                  >
                     <EditIcon />
                   </IconButton>
                   <IconButton
@@ -177,6 +284,14 @@ const Servicos = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Pagination
+        count={totalPages}
+        page={page}
+        onChange={handlePageChange}
+        color="primary"
+        style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}
+      />
     </div>
   );
 };

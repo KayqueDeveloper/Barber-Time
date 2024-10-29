@@ -41,8 +41,8 @@ const CalendarComponent = () => {
       const response = await axios.get("http://localhost:8080/agendamentos");
       const agendamentos = response.data.map((agendamento) => ({
         title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico}`,
-        start: new Date(agendamento.data_agendamento), // Formatação correta
-        end: new Date(agendamento.data_final_agendamento),
+        start: new Date(agendamento?.data_agendamento), // Formatação correta
+        end: new Date(agendamento?.data_final_agendamento),
         agendamento,
       }));
       setEvents(agendamentos);
@@ -55,7 +55,7 @@ const CalendarComponent = () => {
     const fetchClientes = async () => {
       try {
         const response = await axios.get("http://localhost:8080/clientes");
-        setClientes(response.data);
+        setClientes(response?.data.clientes);
       } catch (error) {
         setError("Erro ao buscar clientes");
       }
@@ -68,7 +68,7 @@ const CalendarComponent = () => {
     const fetchServicos = async () => {
       try {
         const response = await axios.get("http://localhost:8080/servicos");
-        setServicos(response.data);
+        setServicos(response?.data?.servicos);
       } catch (error) {
         setError("Erro ao buscar serviços");
       }
@@ -81,7 +81,7 @@ const CalendarComponent = () => {
     const fetchFuncionarios = async () => {
       try {
         const response = await axios.get("http://localhost:8080/funcionarios");
-        setFuncionarios(response.data);
+        setFuncionarios(response?.data.funcionarios);
       } catch (error) {
         setError("Erro ao buscar funcionários");
       }
@@ -98,7 +98,7 @@ const CalendarComponent = () => {
 
   const handleClickEvent = useCallback((event) => {
     console.log("handleClickEvent", event);
-    setAgendamento(event.agendamento);
+    setAgendamento(event?.agendamento);
     setVerAgendamento(true);
   }, []);
 
@@ -108,6 +108,7 @@ const CalendarComponent = () => {
     setSelectedSlot(null);
     setCliente("");
     setFuncionario("");
+    setServico("");
   };
 
   const handleCloseVerAgendamento = () => {
@@ -117,16 +118,16 @@ const CalendarComponent = () => {
 
   const getFuncionario = useCallback(() => {
     const func = funcionarios.filter(
-      (funcionario) => funcionario.id === agendamento.funcionario_id
+      (funcionario) => funcionario?.id === agendamento?.funcionario_id
     );
 
     return func[0]?.nome;
-  }, [agendamento.funcionario_id, funcionarios]);
+  }, [agendamento?.funcionario_id, funcionarios]);
 
   // Função para confirmar o agendamento
   const handleConfirmAgendamento = async () => {
-    const dataFinal = new Date(selectedSlot.start);
-    dataFinal.setMinutes(dataFinal.getMinutes() + 30);
+    const dataFinal = new Date(selectedSlot?.start);
+    dataFinal?.setMinutes(dataFinal?.getMinutes() + 30);
 
     try {
       await axios.post("http://localhost:8080/agendamentos", {
@@ -224,8 +225,8 @@ const CalendarComponent = () => {
                 label="Cliente"
                 onChange={handleChangeCliente}
               >
-                {clientes.map((client, index) => (
-                  <MenuItem value={client.id}>{client?.nome}</MenuItem>
+                {clientes?.map((client, _) => (
+                  <MenuItem value={client?.id}>{client?.nome}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -238,8 +239,8 @@ const CalendarComponent = () => {
                 label="Funcionario"
                 onChange={handleChangeFuncionario}
               >
-                {funcionarios.map((funcionario, _) => (
-                  <MenuItem value={funcionario.id}>
+                {funcionarios?.map((funcionario, _) => (
+                  <MenuItem value={funcionario?.id}>
                     {funcionario?.nome}
                   </MenuItem>
                 ))}
@@ -255,7 +256,7 @@ const CalendarComponent = () => {
                 onChange={handleChangeServico}
               >
                 {servicos.map((servico, _) => (
-                  <MenuItem value={servico.id}>{servico?.nome}</MenuItem>
+                  <MenuItem value={servico?.id}>{servico?.nome}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -296,16 +297,16 @@ const CalendarComponent = () => {
           </Typography>
           <S.AgendamentoDetalhes>
             <S.labels id="demo-simple-select-label">
-              Cliente: {agendamento.nome_cliente}
+              Cliente: {agendamento?.nome_cliente}
             </S.labels>
             <S.labels id="demo-simple-select-label">
               Funcionario: {getFuncionario(funcionarios)}
             </S.labels>
             <S.labels id="demo-simple-select-label">
-              Serviço: {agendamento.nome_servico}
+              Serviço: {agendamento?.nome_servico}
             </S.labels>
             <S.labels id="demo-simple-select-label">
-              Status: {agendamento.status}
+              Status: {agendamento?.status}
             </S.labels>
             <Typography gutterBottom>
               Horário de inicio:{" "}
