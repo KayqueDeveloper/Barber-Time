@@ -118,7 +118,7 @@ func CriarServico(w http.ResponseWriter, r *http.Request) {
 	var servico models.Servico
 	err := json.NewDecoder(r.Body).Decode(&servico)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

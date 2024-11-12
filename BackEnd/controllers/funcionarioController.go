@@ -124,7 +124,7 @@ func CriarFuncionario(w http.ResponseWriter, r *http.Request) {
 		funcionario.Nome, funcionario.Especialidade, funcionario.Telefone).Scan(&funcionario.ID)
 
 	if err != nil {
-		http.Error(w, "Erro ao criar funcionário", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

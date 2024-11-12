@@ -39,7 +39,7 @@ const CalendarComponent = () => {
   const fetchAgendamentos = async () => {
     try {
       const response = await axios.get("http://localhost:8080/agendamentos");
-      const agendamentos = response.data.map((agendamento) => ({
+      const agendamentos = response.data?.map((agendamento) => ({
         title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico}`,
         start: new Date(agendamento?.data_agendamento), // Formatação correta
         end: new Date(agendamento?.data_final_agendamento),
@@ -117,17 +117,17 @@ const CalendarComponent = () => {
   };
 
   const getFuncionario = useCallback(() => {
-    const func = funcionarios.filter(
+    const func = funcionarios?.filter(
       (funcionario) => funcionario?.id === agendamento?.funcionario_id
     );
 
-    return func[0]?.nome;
+    return func?.[0]?.nome;
   }, [agendamento?.funcionario_id, funcionarios]);
 
   // Função para confirmar o agendamento
   const handleConfirmAgendamento = async () => {
     const dataFinal = new Date(selectedSlot?.start);
-    dataFinal?.setMinutes(dataFinal?.getMinutes() + 30);
+    dataFinal?.setMinutes(dataFinal?.getMinutes() + servico.duracao);
 
     try {
       await axios.post("http://localhost:8080/agendamentos", {
@@ -255,7 +255,7 @@ const CalendarComponent = () => {
                 label="Serviço"
                 onChange={handleChangeServico}
               >
-                {servicos.map((servico, _) => (
+                {servicos?.map((servico, _) => (
                   <MenuItem value={servico?.id}>{servico?.nome}</MenuItem>
                 ))}
               </Select>
@@ -269,7 +269,7 @@ const CalendarComponent = () => {
                 label="Status"
                 onChange={(event) => setStatus(event?.target?.value)}
               >
-                {Status.map((servico, _) => (
+                {Status?.map((servico, _) => (
                   <MenuItem value={servico}>{servico}</MenuItem>
                 ))}
               </Select>

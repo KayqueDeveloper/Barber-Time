@@ -2,13 +2,12 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Login from "./Login";
-import Dashboard from "./Dashboard";
+import Home from "./Home";
 import Agendamentos from "./Agendamentos";
 import Clientes from "./Clientes";
 import Servicos from "./Servicos";
 import Funcionarios from "./Funcionarios";
 import Relatorios from "./Relatorios";
-import Configuracoes from "./Configuracoes";
 import Header from "./Header";
 
 function App() {
@@ -18,11 +17,11 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route
-            path="/dashboard"
+            path="/home"
             element={
               <>
                 <Header />
-                <Dashboard />
+                <Home />
               </>
             }
           />
@@ -68,15 +67,6 @@ function App() {
               <>
                 <Header />
                 <Relatorios />
-              </>
-            }
-          />
-          <Route
-            path="/configuracoes"
-            element={
-              <>
-                <Header />
-                <Configuracoes />
               </>
             }
           />

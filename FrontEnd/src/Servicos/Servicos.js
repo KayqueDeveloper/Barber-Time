@@ -177,7 +177,7 @@ const Servicos = () => {
               fullWidth
               label="Preço"
               value={preco}
-              onChange={(e) => setPreco(e.target.value)}
+              onChange={(e) => setPreco(Number(e.target.value))}
               margin="normal"
               required
             />
@@ -220,7 +220,7 @@ const Servicos = () => {
               fullWidth
               label="Preço"
               value={preco}
-              onChange={(e) => setPreco(e.target.value)}
+              onChange={(e) => setPreco(Number(e.target.value))}
               margin="normal"
               required
             />
