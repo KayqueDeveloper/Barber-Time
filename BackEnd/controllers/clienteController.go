@@ -39,7 +39,7 @@ func ListarClientes(w http.ResponseWriter, r *http.Request) {
 	offset := (page - 1) * limit
 
 	// Query com filtro de pesquisa e paginação
-	query := "SELECT id, nome, telefone, email, criado_em FROM barbearia.clientes WHERE nome ILIKE '%' || $1 || '%' ORDER BY nome LIMIT $2 OFFSET $3"
+	query := "SELECT id, nome, telefone, email, criado_em, cpf, cep, rua, bairro, cidade, estado FROM barbearia.clientes WHERE nome ILIKE '%' || $1 || '%' ORDER BY nome LIMIT $2 OFFSET $3"
 	rows, err := db.Query(query, search, limit, offset)
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
@@ -51,7 +51,7 @@ func ListarClientes(w http.ResponseWriter, r *http.Request) {
 	var clientes []models.Cliente
 	for rows.Next() {
 		var cliente models.Cliente
-		err := rows.Scan(&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm)
+		err := rows.Scan(&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm, &cliente.Cep, &cliente.Cidade, &cliente.Cpf, &cliente.Rua, &cliente.Estado, &cliente.Bairro)
 		if err != nil {
 			http.Error(w, "Erro ao escanear dados", http.StatusInternalServerError)
 			return
@@ -99,8 +99,8 @@ func BuscarCliente(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	var cliente models.Cliente
-	err = db.QueryRow("SELECT id, nome, telefone, email, criado_em FROM barbearia.clientes WHERE id = $1", id).Scan(
-		&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm)
+	err = db.QueryRow("SELECT id, nome, telefone, email, criado_em, cpf, cep, rua, bairro, cidade, estado FROM barbearia.clientes WHERE id = $1", id).Scan(
+		&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm, &cliente.Cep, &cliente.Cidade, &cliente.Cpf, &cliente.Rua, &cliente.Estado, &cliente.Bairro)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Cliente não encontrado", http.StatusNotFound)
@@ -129,8 +129,8 @@ func CriarCliente(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	err = db.QueryRow("INSERT INTO barbearia.clientes (nome, telefone, email, criado_em) VALUES ($1, $2, $3, NOW()) RETURNING id",
-		cliente.Nome, cliente.Telefone, cliente.Email).Scan(&cliente.ID)
+	err = db.QueryRow("INSERT INTO barbearia.clientes (nome, telefone, email, criado_em, cpf, cep, rua, bairro, cidade, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8, $9) RETURNING id",
+		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cep, cliente.Cidade, cliente.Cpf, cliente.Rua, cliente.Estado, cliente.Bairro).Scan(&cliente.ID)
 
 	if err != nil {
 		http.Error(w, "Erro ao criar cliente", http.StatusInternalServerError)
@@ -163,8 +163,8 @@ func AtualizarCliente(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE barbearia.clientes SET nome = $1, telefone = $2, email = $3 WHERE id = $4",
-		cliente.Nome, cliente.Telefone, cliente.Email, id)
+	_, err = db.Exec("UPDATE barbearia.clientes SET nome = $1, telefone = $2, email = $3, cpf = $4, cep = $5, rua = $6, bairro = $71, cidade = $8, estado = $9 WHERE id = $10",
+		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cep, cliente.Cidade, cliente.Cpf, cliente.Rua, cliente.Estado, cliente.Bairro, id)
 
 	if err != nil {
 		http.Error(w, "Erro ao atualizar cliente", http.StatusInternalServerError)

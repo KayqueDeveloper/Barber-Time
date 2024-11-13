@@ -17,7 +17,7 @@ const Header = () => {
         </Typography>
 
         {/* Botões de Navegação */}
-        <Button color="inherit" onClick={() => navigate("/dashboard")}>
+        <Button color="inherit" onClick={() => navigate("/home")}>
           Home
         </Button>
         <Button color="inherit" onClick={() => navigate("/clientes")}>

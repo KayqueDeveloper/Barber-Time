@@ -34,6 +34,7 @@ const CalendarComponent = () => {
   const [error, setError] = useState("");
   const [verAgendamento, setVerAgendamento] = useState(false);
   const [agendamento, setAgendamento] = useState("");
+  const [slot, setSlot] = useState({});
 
   // Função para buscar agendamentos do backend
   const fetchAgendamentos = async () => {
@@ -97,7 +98,6 @@ const CalendarComponent = () => {
   };
 
   const handleClickEvent = useCallback((event) => {
-    console.log("handleClickEvent", event);
     setAgendamento(event?.agendamento);
     setVerAgendamento(true);
   }, []);
@@ -127,13 +127,14 @@ const CalendarComponent = () => {
   // Função para confirmar o agendamento
   const handleConfirmAgendamento = async () => {
     const dataFinal = new Date(selectedSlot?.start);
-    dataFinal?.setMinutes(dataFinal?.getMinutes() + servico.duracao);
+    dataFinal?.setMinutes(dataFinal?.getMinutes() + servico?.duracao);
+    console.log(slot);
 
     try {
       await axios.post("http://localhost:8080/agendamentos", {
         cliente_id: cliente,
         funcionario_id: funcionario,
-        servico_id: servico,
+        servico_id: servico?.id,
         status,
         data_agendamento: new Date(selectedSlot.start).toISOString(),
         data_final_agendamento: dataFinal.toISOString(),
@@ -181,7 +182,24 @@ const CalendarComponent = () => {
   };
 
   const handleChangeFuncionario = (event) => {
-    setFuncionario(event?.target?.value);
+    const eventosFuncionario = events.filter((agendamento) => {
+      return agendamento?.agendamento?.funcionario_id === event.target.value;
+    });
+
+    const isDateConflicting = eventosFuncionario.some((element) => {
+      const selectedDate = new Date(selectedSlot.start).getTime();
+      const agendamentoDate = new Date(
+        element?.agendamento?.data_agendamento
+      ).getTime();
+      return selectedDate === agendamentoDate;
+    });
+
+    if (isDateConflicting) {
+      console.log("Conflito: a data selecionada já está ocupada.");
+    } else {
+      console.log("A data selecionada está disponível.");
+      setFuncionario(event?.target?.value);
+    }
   };
 
   const handleChangeServico = (event) => {
@@ -256,7 +274,7 @@ const CalendarComponent = () => {
                 onChange={handleChangeServico}
               >
                 {servicos?.map((servico, _) => (
-                  <MenuItem value={servico?.id}>{servico?.nome}</MenuItem>
+                  <MenuItem value={servico}>{servico?.nome}</MenuItem>
                 ))}
               </Select>
             </FormControl>

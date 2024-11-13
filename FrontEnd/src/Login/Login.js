@@ -1,12 +1,6 @@
 // Login.js
 import React, { useState } from "react";
-import {
-  Button,
-  TextField,
-  Typography,
-  Paper,
-  Box,
-} from "@mui/material";
+import { Button, TextField, Typography, Paper, Box } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // Para redirecionamento
 import "./Login.css";
@@ -35,7 +29,7 @@ const Login = () => {
       });
       if (response.status === 200) {
         // Login bem-sucedido
-        navigate("/dashboard"); // Redireciona para o Dashboard
+        navigate("/home"); // Redireciona para o Dashboard
       }
     } catch (error) {
       setError("Credenciais inválidas. Tente novamente.");

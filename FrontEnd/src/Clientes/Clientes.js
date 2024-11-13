@@ -19,6 +19,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import Pagination from "@mui/material/Pagination";
 import "./Clientes.css";
+import { validarCPF } from "../Helpers";
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
@@ -32,6 +33,13 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
   const [page, setPage] = useState(1); // Página atual
   const [totalPages, setTotalPages] = useState(1); // Total de páginas
+  const [cpf, setCpf] = useState("");
+  const [cep, setCep] = useState("");
+  const [rua, setRua] = useState("");
+  const [estado, setEstado] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cpfError, setCpfError] = useState(false);
 
   const fetchClientes = async (page, searchTerm = "") => {
     try {
@@ -42,11 +50,34 @@ const Clientes = () => {
           search: searchTerm,
         },
       });
-      setClientes(response?.data?.clientes);
-      setTotalPages(response?.data?.totalPages);
-      console.log(response.data.totalPages);
+      const { clientes, currentPage, totalPages } = response.data;
+      setClientes(clientes); // Atualiza a lista de clientes
+      setPage(currentPage); // Atualiza a página atual
+      setTotalPages(totalPages); // Atualiza o total de páginas
     } catch (error) {
       setError("Erro ao buscar clientes");
+    }
+  };
+
+  const buscarEnderecoPorCEP = async (cep) => {
+    if (cep.length === 8) {
+      // Verifica se o CEP tem 8 dígitos
+      try {
+        const response = await axios.get(
+          `https://viacep.com.br/ws/${cep}/json/`
+        );
+        if (response.data.erro) {
+          setError("CEP não encontrado");
+        } else {
+          setRua(response.data.logradouro);
+          setBairro(response.data.bairro);
+          setCidade(response.data.localidade);
+          setEstado(response.data.uf);
+          setCep(cep); // Garante que o CEP não seja modificado
+        }
+      } catch (error) {
+        setError("Erro ao buscar endereço");
+      }
     }
   };
 
@@ -71,17 +102,34 @@ const Clientes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validação de CPF
+    if (!validarCPF(cpf)) {
+      setCpfError(true);
+      return;
+    }
+
+    // Validação de email
+    if (!validarEmail(email)) {
+      setError("Email inválido");
+      return;
+    }
+
     try {
       const response = await axios.post("http://localhost:8080/clientes", {
         nome,
         telefone,
         email,
+        cpf,
+        cep,
+        rua,
+        estado,
+        cidade,
+        bairro,
       });
       setClientes([...clientes, response.data]);
       handleClose();
-      setNome("");
-      setTelefone("");
-      setEmail("");
+      resetForm();
     } catch (error) {
       setError("Erro ao adicionar cliente");
     }
@@ -89,21 +137,51 @@ const Clientes = () => {
 
   const handleSubmitEdit = async (e) => {
     e.preventDefault();
+
+    // Validação de CPF
+    if (!validarCPF(cpf)) {
+      setCpfError(true);
+      return;
+    }
+
     try {
-      await axios?.put(`http://localhost:8080/clientes/${cliente?.id}`, {
+      await axios.put(`http://localhost:8080/clientes/${cliente?.id}`, {
         nome,
         telefone,
         email,
+        cpf,
+        cep,
+        rua,
+        estado,
+        cidade,
+        bairro,
       });
       setCliente({});
       handleClose();
-      setNome("");
-      setTelefone("");
-      setEmail("");
+      resetForm();
       fetchClientes(page, searchTerm);
     } catch (error) {
       setError("Erro ao editar cliente");
     }
+  };
+
+  const validarEmail = (email) => {
+    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return regex.test(email);
+  };
+
+  // Função para limpar o formulário
+  const resetForm = () => {
+    setNome("");
+    setTelefone("");
+    setEmail("");
+    setCpf("");
+    setCep("");
+    setRua("");
+    setEstado("");
+    setCidade("");
+    setBairro("");
+    setCpfError(false); // Reseta o erro de CPF
   };
 
   const handleOpenEdit = async (cliente) => {
@@ -114,6 +192,15 @@ const Clientes = () => {
     setOpenEdit(true);
   };
 
+  const handleSetCPF = (e) => {
+    if (!validarCPF(e.target.value)) {
+      setCpfError(true);
+      setCpf(e.target.value);
+      return;
+    }
+    setCpf(e.target.value);
+    setCpfError(false);
+  };
   const removerCliente = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/clientes/${id}`);
@@ -189,6 +276,61 @@ const Clientes = () => {
               onChange={(e) => setEmail(e?.target?.value)}
               margin="normal"
               required
+              error={error && error.includes("Email")}
+              helperText={
+                error && error.includes("Email") ? "Email inválido" : ""
+              }
+            />
+            <TextField
+              fullWidth
+              label="CPF"
+              value={cpf}
+              onChange={handleSetCPF}
+              margin="normal"
+              required
+              error={cpfError}
+              helperText={cpfError && "CPF inválido"}
+            />
+            <TextField
+              fullWidth
+              label="CEP"
+              value={cep}
+              onChange={(e) => setCep(e.target.value)}
+              onBlur={() => buscarEnderecoPorCEP(cep)} // Chama a função ao sair do campo
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Rua"
+              value={rua}
+              onChange={(e) => setRua(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Estado"
+              value={estado}
+              onChange={(e) => setEstado(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Cidade"
+              value={cidade}
+              onChange={(e) => setCidade(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Bairro"
+              value={bairro}
+              onChange={(e) => setBairro(e?.target?.value)}
+              margin="normal"
+              required
             />
             <Button
               type="submit"
@@ -212,22 +354,16 @@ const Clientes = () => {
             <TextField
               fullWidth
               label="Nome"
-              value={cliente?.nome}
-              onChange={(e) => {
-                setCliente({ ...cliente, nome: e?.target?.value });
-                setNome(e.target.value);
-              }}
+              value={nome}
+              onChange={(e) => setNome(e?.target?.value)}
               margin="normal"
               required
             />
             <TextField
               fullWidth
               label="Telefone"
-              value={cliente?.telefone}
-              onChange={(e) => {
-                setCliente({ ...cliente, telefone: e?.target?.value });
-                setTelefone(e.target.value);
-              }}
+              value={telefone}
+              onChange={(e) => setTelefone(e?.target?.value)}
               margin="normal"
               required
             />
@@ -235,11 +371,56 @@ const Clientes = () => {
               fullWidth
               label="Email"
               type="email"
-              value={cliente?.email}
-              onChange={(e) => {
-                setCliente({ ...cliente, email: e?.target?.value });
-                setEmail(e.target.value);
-              }}
+              value={email}
+              onChange={(e) => setEmail(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="CPF"
+              value={cpf}
+              onChange={(e) => setCpf(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="CEP"
+              value={cep}
+              onChange={(e) => setCep(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Rua"
+              value={rua}
+              onChange={(e) => setRua(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Estado"
+              value={estado}
+              onChange={(e) => setEstado(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Cidade"
+              value={cidade}
+              onChange={(e) => setCidade(e?.target?.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Bairro"
+              value={bairro}
+              onChange={(e) => setBairro(e?.target?.value)}
               margin="normal"
               required
             />
@@ -263,6 +444,12 @@ const Clientes = () => {
               <TableCell>Nome</TableCell>
               <TableCell>Telefone</TableCell>
               <TableCell>Email</TableCell>
+              <TableCell>CPF</TableCell>
+              <TableCell>CEP</TableCell>
+              <TableCell>Rua</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell>Cidade</TableCell>
+              <TableCell>Bairro</TableCell>
               <TableCell>Ações</TableCell>
             </TableRow>
           </TableHead>
@@ -272,6 +459,12 @@ const Clientes = () => {
                 <TableCell>{cliente?.nome}</TableCell>
                 <TableCell>{cliente?.telefone}</TableCell>
                 <TableCell>{cliente?.email}</TableCell>
+                <TableCell>{cliente?.cpf}</TableCell>
+                <TableCell>{cliente?.cep}</TableCell>
+                <TableCell>{cliente?.rua}</TableCell>
+                <TableCell>{cliente?.estado}</TableCell>
+                <TableCell>{cliente?.cidade}</TableCell>
+                <TableCell>{cliente?.bairro}</TableCell>
                 <TableCell>
                   <IconButton
                     color="primary"

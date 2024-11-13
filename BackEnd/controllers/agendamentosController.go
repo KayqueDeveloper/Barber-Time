@@ -93,7 +93,7 @@ func CriarAgendamento(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	err = db.QueryRow(
-		"INSERT INTO barbearia.agendamentos (cliente_id, funcionario_id, servico_id, data_agendamento, data_final_agendamento, status, criado_em) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id",
+		"INSERT INTO barbearia.agendamentos (cliente_id, funcionario_id, servico_id, data_agendamento, data_final_agendamento, status, criado_em) VALUES ($1, $2, $3, $4, $5, $6, NOW() ) RETURNING id",
 		agendamento.ClienteID, agendamento.FuncionarioID, agendamento.ServicoID, agendamento.DataAgendamento, agendamento.DataFinalAgendamento, agendamento.Status,
 	).Scan(&agendamento.ID)
 

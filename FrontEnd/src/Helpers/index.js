@@ -1,0 +1,1 @@
+export { validarCPF } from "./validacoes";
