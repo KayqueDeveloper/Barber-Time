@@ -1,1 +1,1 @@
-export { validarCPF } from "./validacoes";
+export { validarCPF, FormatarSalario } from "./validacoes";

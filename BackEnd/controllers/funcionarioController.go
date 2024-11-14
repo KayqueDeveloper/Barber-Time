@@ -19,10 +19,11 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	// Lendo os parâmetros de paginação e pesquisa
+	// Lendo os parâmetros de paginação, pesquisa e filtro de cargo
 	pageParam := r.URL.Query().Get("page")
 	limitParam := r.URL.Query().Get("limit")
 	search := r.URL.Query().Get("search")
+	cargo := r.URL.Query().Get("cargo") // Novo parâmetro de filtro para cargo
 
 	page, err := strconv.Atoi(pageParam)
 	if err != nil || page < 1 {
@@ -35,8 +36,24 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * limit
 
-	query := "SELECT id, nome, especialidade, telefone FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%' ORDER BY nome LIMIT $2 OFFSET $3"
-	rows, err := db.Query(query, search, limit, offset)
+	// Construindo a query com filtro de cargo, se presente
+	query := "SELECT id, nome, especialidade, telefone, cargo, cpf, salario FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%'"
+
+	// Adicionando o filtro de cargo à query, se o parâmetro cargo for fornecido
+	if cargo != "" {
+		query += " AND LOWER(cargo) = LOWER($2)" // Usando LOWER para tornar a comparação case-insensitive
+	}
+
+	// Adicionando as cláusulas LIMIT e OFFSET
+	query += " ORDER BY nome LIMIT $3 OFFSET $4"
+
+	// Executando a consulta
+	var rows *sql.Rows
+	if cargo != "" {
+		rows, err = db.Query(query, search, cargo, limit, offset)
+	} else {
+		rows, err = db.Query(query, search, limit, offset)
+	}
 	if err != nil {
 		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
 		return
@@ -46,7 +63,7 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	var funcionarios []models.Funcionario
 	for rows.Next() {
 		var funcionario models.Funcionario
-		err := rows.Scan(&funcionario.ID, &funcionario.Nome, &funcionario.Especialidade, &funcionario.Telefone)
+		err := rows.Scan(&funcionario.ID, &funcionario.Nome, &funcionario.Especialidade, &funcionario.Telefone, &funcionario.Cargo, &funcionario.Cpf, &funcionario.Salario)
 		if err != nil {
 			http.Error(w, "Erro ao escanear dados", http.StatusInternalServerError)
 			return
@@ -54,8 +71,13 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 		funcionarios = append(funcionarios, funcionario)
 	}
 
+	// Contando o total de funcionários com o filtro de pesquisa e cargo
 	var totalFuncionarios int
-	err = db.QueryRow("SELECT COUNT(*) FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%'", search).Scan(&totalFuncionarios)
+	if cargo != "" {
+		err = db.QueryRow("SELECT COUNT(*) FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%' AND LOWER(cargo) = LOWER($2)", search, cargo).Scan(&totalFuncionarios)
+	} else {
+		err = db.QueryRow("SELECT COUNT(*) FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%'", search).Scan(&totalFuncionarios)
+	}
 	if err != nil {
 		http.Error(w, "Erro ao contar funcionários", http.StatusInternalServerError)
 		return
@@ -63,6 +85,7 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := (totalFuncionarios + limit - 1) / limit
 
+	// Montando a resposta JSON
 	response := map[string]interface{}{
 		"funcionarios": funcionarios,
 		"totalPages":   totalPages,
@@ -90,8 +113,8 @@ func BuscarFuncionario(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	var funcionario models.Funcionario
-	err = db.QueryRow("SELECT id, nome, especialidade, telefone, criado_em FROM barbearia.funcionarios WHERE id = $1", id).Scan(
-		&funcionario.ID, &funcionario.Nome, &funcionario.Especialidade, &funcionario.Telefone, &funcionario.CriadoEm)
+	err = db.QueryRow("SELECT id, nome, especialidade, telefone, criado_em, cargo, cpf, salario FROM barbearia.funcionarios WHERE id = $1", id).Scan(
+		&funcionario.ID, &funcionario.Nome, &funcionario.Especialidade, &funcionario.Telefone, &funcionario.CriadoEm, &funcionario.Cargo, &funcionario.Cpf, &funcionario.Salario)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
@@ -120,8 +143,8 @@ func CriarFuncionario(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	err = db.QueryRow("INSERT INTO barbearia.funcionarios (nome, especialidade, telefone, criado_em) VALUES ($1, $2, $3, NOW()) RETURNING id",
-		funcionario.Nome, funcionario.Especialidade, funcionario.Telefone).Scan(&funcionario.ID)
+	err = db.QueryRow("INSERT INTO barbearia.funcionarios (nome, especialidade, telefone, criado_em, cargo, cpf, salario) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id",
+		funcionario.Nome, funcionario.Especialidade, funcionario.Telefone, funcionario.Cargo, funcionario.Cpf, funcionario.Salario).Scan(&funcionario.ID)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -154,8 +177,8 @@ func AtualizarFuncionario(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE barbearia.funcionarios SET nome = $1, especialidade = $2, telefone = $3 WHERE id = $4",
-		funcionario.Nome, funcionario.Especialidade, funcionario.Telefone, id)
+	_, err = db.Exec("UPDATE barbearia.funcionarios SET nome = $1, especialidade = $2, telefone = $3, cargo = $5, cpf = $6, salario = $7 WHERE id = $4",
+		funcionario.Nome, funcionario.Especialidade, funcionario.Telefone, id, funcionario.Cargo, funcionario.Cpf, funcionario.Salario)
 
 	if err != nil {
 		http.Error(w, "Erro ao atualizar funcionário", http.StatusInternalServerError)

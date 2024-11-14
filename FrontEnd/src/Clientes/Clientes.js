@@ -96,6 +96,7 @@ const Clientes = () => {
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
+    resetForm();
     setOpen(false);
     setOpenEdit(false);
   };
@@ -143,6 +144,7 @@ const Clientes = () => {
       setCpfError(true);
       return;
     }
+    console.log(" passou");
 
     try {
       await axios.put(`http://localhost:8080/clientes/${cliente?.id}`, {
@@ -161,6 +163,7 @@ const Clientes = () => {
       resetForm();
       fetchClientes(page, searchTerm);
     } catch (error) {
+      console.log(error);
       setError("Erro ao editar cliente");
     }
   };
@@ -193,12 +196,19 @@ const Clientes = () => {
   };
 
   const handleSetCPF = (e) => {
+    const onlyNumbers = e.target.value.replace(/\D/g, "");
+
+    const formattedCpf = onlyNumbers
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
     if (!validarCPF(e.target.value)) {
       setCpfError(true);
-      setCpf(e.target.value);
+      setCpf(formattedCpf);
       return;
     }
-    setCpf(e.target.value);
+    setCpf(formattedCpf);
     setCpfError(false);
   };
   const removerCliente = async (id) => {
@@ -290,6 +300,7 @@ const Clientes = () => {
               required
               error={cpfError}
               helperText={cpfError && "CPF inválido"}
+              inputProps={{ maxLength: 14 }}
             />
             <TextField
               fullWidth
@@ -345,7 +356,7 @@ const Clientes = () => {
         </Box>
       </Modal>
 
-      <Modal open={openEdit} onClose={handleClose}>
+      <Modal open={openEdit} onClose={handleClose} on>
         <Box sx={modalStyle}>
           <Typography variant="h6" component="h2">
             Editar Cliente
@@ -380,15 +391,19 @@ const Clientes = () => {
               fullWidth
               label="CPF"
               value={cpf}
-              onChange={(e) => setCpf(e?.target?.value)}
+              onChange={handleSetCPF}
               margin="normal"
               required
+              error={cpfError}
+              helperText={cpfError && "CPF inválido"}
+              inputProps={{ maxLength: 14 }}
             />
             <TextField
               fullWidth
               label="CEP"
               value={cep}
-              onChange={(e) => setCep(e?.target?.value)}
+              onChange={(e) => setCep(e.target.value)}
+              onBlur={() => buscarEnderecoPorCEP(cep)} // Chama a função ao sair do campo
               margin="normal"
               required
             />

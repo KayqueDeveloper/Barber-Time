@@ -41,7 +41,7 @@ const CalendarComponent = () => {
     try {
       const response = await axios.get("http://localhost:8080/agendamentos");
       const agendamentos = response.data?.map((agendamento) => ({
-        title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico}`,
+        title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico} - ${agendamento?.status}`,
         start: new Date(agendamento?.data_agendamento), // Formatação correta
         end: new Date(agendamento?.data_final_agendamento),
         agendamento,
@@ -81,7 +81,11 @@ const CalendarComponent = () => {
   useEffect(() => {
     const fetchFuncionarios = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/funcionarios");
+        const response = await axios.get("http://localhost:8080/funcionarios", {
+          params: {
+            cargo: "barbeiro",
+          },
+        });
         setFuncionarios(response?.data.funcionarios);
       } catch (error) {
         setError("Erro ao buscar funcionários");

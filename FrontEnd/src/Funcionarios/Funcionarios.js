@@ -14,11 +14,21 @@ import {
   Typography,
   IconButton,
   Pagination,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
+import { validarCPF, FormatarSalario } from "../Helpers";
+
 import "./Funcionarios.css";
+
+const CARGOS = {
+  ["BARBEIRO"]: "Barbeiro",
+  ["SECRETARIA"]: "Secretaria",
+  ["CEO"]: "CEO",
+};
 
 const Funcionarios = () => {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -28,10 +38,14 @@ const Funcionarios = () => {
   const [nome, setNome] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [salario, setSalario] = useState("");
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
-  const [page, setPage] = useState(1); // Página atual
-  const [totalPages, setTotalPages] = useState(1); // Total de páginas
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [cpfError, setCpfError] = useState(false);
 
   const fetchFuncionarios = async (page, searchTerm = "") => {
     try {
@@ -54,7 +68,7 @@ const Funcionarios = () => {
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
-    setPage(1); // Reseta para a primeira página ao realizar uma nova pesquisa
+    setPage(1);
   };
 
   const handlePageChange = (event, value) => {
@@ -62,13 +76,24 @@ const Funcionarios = () => {
   };
 
   const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setNome("");
+    setEspecialidade("");
+    setTelefone("");
+    setCpf("");
+    setCargo("");
+    setSalario("");
+    setOpen(false);
+  };
 
   const handleOpenEdit = (funcionario) => {
     setFuncionario(funcionario);
     setNome(funcionario?.nome);
-    setTelefone(funcionario?.telefone);
     setEspecialidade(funcionario?.especialidade);
+    setTelefone(funcionario?.telefone);
+    setCpf(funcionario?.cpf);
+    setCargo(funcionario?.cargo);
+    setSalario(funcionario?.salario);
     setOpenEdit(true);
   };
 
@@ -77,21 +102,28 @@ const Funcionarios = () => {
     setNome("");
     setEspecialidade("");
     setTelefone("");
+    setCpf("");
+    setCargo("");
+    setSalario("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validarCPF(cpf)) {
+      setCpfError(true);
+      return;
+    }
     try {
       const response = await axios.post("http://localhost:8080/funcionarios", {
         nome,
         especialidade,
         telefone,
+        cpf,
+        cargo,
+        salario,
       });
-      setFuncionarios([...funcionarios, response?.data]);
+      setFuncionarios([...funcionarios, response.data]);
       handleClose();
-      setNome("");
-      setEspecialidade("");
-      setTelefone("");
     } catch (error) {
       setError("Erro ao adicionar funcionário");
     }
@@ -99,25 +131,42 @@ const Funcionarios = () => {
 
   const handleSubmitEdit = async (e) => {
     e.preventDefault();
+    if (!validarCPF(cpf)) {
+      setCpfError(true);
+      return;
+    }
     try {
-      await axios?.put(
-        `http://localhost:8080/funcionarios/${funcionario?.id}`,
-        {
-          nome,
-          telefone,
-          especialidade,
-        }
-      );
+      await axios.put(`http://localhost:8080/funcionarios/${funcionario?.id}`, {
+        nome,
+        especialidade,
+        telefone,
+        cpf,
+        cargo,
+        salario,
+      });
       handleCloseEdit();
-      setFuncionario({});
-      setNome("");
-      setTelefone("");
       fetchFuncionarios(page, searchTerm);
     } catch (error) {
-      setError("Erro ao editar funcionario");
+      setError("Erro ao editar funcionário");
     }
   };
 
+  const handleSetCPF = (e) => {
+    const onlyNumbers = e.target.value.replace(/\D/g, "");
+
+    const formattedCpf = onlyNumbers
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+    if (!validarCPF(e.target.value)) {
+      setCpfError(true);
+      setCpf(formattedCpf);
+      return;
+    }
+    setCpf(formattedCpf);
+    setCpfError(false);
+  };
   const removerFuncionario = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/funcionarios/${id}`);
@@ -147,17 +196,11 @@ const Funcionarios = () => {
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
 
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        marginBottom={2}
-      >
+      <Box display="flex" justifyContent="space-between" marginBottom={2}>
         <TextField
           label="Buscar por Nome"
           value={searchTerm}
           onChange={handleSearch}
-          placeholder="Digite o nome do funcionário"
           variant="outlined"
         />
         <Button variant="contained" color="primary" onClick={handleOpen}>
@@ -165,17 +208,16 @@ const Funcionarios = () => {
         </Button>
       </Box>
 
+      {/* Modal Adicionar */}
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
-            Adicionar Funcionário
-          </Typography>
+          <Typography variant="h6">Adicionar Funcionário</Typography>
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
               label="Nome"
               value={nome}
-              onChange={(e) => setNome(e?.target?.value)}
+              onChange={(e) => setNome(e.target.value)}
               margin="normal"
               required
             />
@@ -183,7 +225,7 @@ const Funcionarios = () => {
               fullWidth
               label="Especialidade"
               value={especialidade}
-              onChange={(e) => setEspecialidade(e?.target?.value)}
+              onChange={(e) => setEspecialidade(e.target.value)}
               margin="normal"
               required
             />
@@ -191,7 +233,37 @@ const Funcionarios = () => {
               fullWidth
               label="Telefone"
               value={telefone}
-              onChange={(e) => setTelefone(e?.target?.value)}
+              onChange={(e) => setTelefone(e.target.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="CPF"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
+              margin="normal"
+              required
+              inputProps={{ maxLength: 14 }}
+            />
+            <Select
+              fullWidth
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={cargo}
+              label="Cargo"
+              margin="normal"
+              onChange={(e) => setCargo(e.target.value)}
+            >
+              {Object.entries(CARGOS)?.map(([_, value]) => (
+                <MenuItem value={value}>{value}</MenuItem>
+              ))}
+            </Select>
+            <TextField
+              fullWidth
+              label="Salário"
+              value={salario}
+              onChange={(e) => setSalario(e.target.value)}
               margin="normal"
               required
             />
@@ -208,45 +280,64 @@ const Funcionarios = () => {
         </Box>
       </Modal>
 
+      {/* Modal Editar */}
       <Modal open={openEdit} onClose={handleCloseEdit}>
         <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
-            Editar Funcionario
-          </Typography>
+          <Typography variant="h6">Editar Funcionário</Typography>
           <form onSubmit={handleSubmitEdit}>
             <TextField
               fullWidth
               label="Nome"
-              value={funcionario?.nome}
-              onChange={(e) => {
-                setFuncionario({ ...funcionario, nome: e?.target?.value });
-                setNome(e.target.value);
-              }}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Telefone"
-              value={funcionario?.telefone}
-              onChange={(e) => {
-                setFuncionario({ ...funcionario, telefone: e?.target?.value });
-                setTelefone(e.target.value);
-              }}
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
               margin="normal"
               required
             />
             <TextField
               fullWidth
               label="Especialidade"
-              value={funcionario?.especialidade}
-              onChange={(e) => {
-                setFuncionario({
-                  ...funcionario,
-                  especialidade: e?.target?.value,
-                });
-                setEspecialidade(e.target.value);
-              }}
+              value={especialidade}
+              onChange={(e) => setEspecialidade(e.target.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Telefone"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="CPF"
+              value={cpf}
+              onChange={handleSetCPF}
+              margin="normal"
+              required
+              error={cpfError}
+              helperText={cpfError && "CPF inválido"}
+              inputProps={{ maxLength: 14 }}
+            />
+            <Select
+              fullWidth
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={cargo}
+              label="Cargo"
+              margin="normal"
+              onChange={(e) => setCargo(e.target.value)}
+            >
+              {Object.entries(CARGOS)?.map(([_, value]) => (
+                <MenuItem value={value}>{value}</MenuItem>
+              ))}
+            </Select>
+            <TextField
+              fullWidth
+              label="Salário"
+              value={salario}
+              onChange={(e) => setSalario(e.target.value)}
               margin="normal"
               required
             />
@@ -263,13 +354,17 @@ const Funcionarios = () => {
         </Box>
       </Modal>
 
-      <TableContainer component={Paper} style={{ marginTop: "20px" }}>
+      {/* Tabela */}
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Nome</TableCell>
               <TableCell>Especialidade</TableCell>
               <TableCell>Telefone</TableCell>
+              <TableCell>CPF</TableCell>
+              <TableCell>Cargo</TableCell>
+              <TableCell>Salário</TableCell>
               <TableCell>Ações</TableCell>
             </TableRow>
           </TableHead>
@@ -279,17 +374,18 @@ const Funcionarios = () => {
                 <TableCell>{funcionario?.nome}</TableCell>
                 <TableCell>{funcionario?.especialidade}</TableCell>
                 <TableCell>{funcionario?.telefone}</TableCell>
+                <TableCell>{funcionario?.cpf}</TableCell>
+                <TableCell>{funcionario?.cargo}</TableCell>
+                <TableCell>{FormatarSalario(funcionario?.salario)}</TableCell>
                 <TableCell>
                   <IconButton
                     color="primary"
-                    aria-label="editar funcionário"
                     onClick={() => handleOpenEdit(funcionario)}
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
                     color="secondary"
-                    aria-label="excluir funcionário"
                     onClick={() => removerFuncionario(funcionario?.id)}
                   >
                     <DeleteIcon />
@@ -302,13 +398,13 @@ const Funcionarios = () => {
       </TableContainer>
 
       {/* Paginação */}
-      <Pagination
-        count={totalPages}
-        page={page}
-        onChange={handlePageChange}
-        color="primary"
-        style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}
-      />
+      <Box display="flex" justifyContent="center" marginTop={2}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+        />
+      </Box>
     </div>
   );
 };

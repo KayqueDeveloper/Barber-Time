@@ -100,7 +100,7 @@ func BuscarCliente(w http.ResponseWriter, r *http.Request) {
 
 	var cliente models.Cliente
 	err = db.QueryRow("SELECT id, nome, telefone, email, criado_em, cpf, cep, rua, bairro, cidade, estado FROM barbearia.clientes WHERE id = $1", id).Scan(
-		&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm, &cliente.Cep, &cliente.Cidade, &cliente.Cpf, &cliente.Rua, &cliente.Estado, &cliente.Bairro)
+		&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm, &cliente.Cpf, &cliente.Cep, &cliente.Rua, &cliente.Bairro, &cliente.Cidade, &cliente.Estado)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Cliente não encontrado", http.StatusNotFound)
@@ -163,7 +163,7 @@ func AtualizarCliente(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE barbearia.clientes SET nome = $1, telefone = $2, email = $3, cpf = $4, cep = $5, rua = $6, bairro = $71, cidade = $8, estado = $9 WHERE id = $10",
+	_, err = db.Exec("UPDATE barbearia.clientes SET nome = $1, telefone = $2, email = $3, cpf = $4, cep = $5, rua = $6, bairro = $7, cidade = $8, estado = $9 WHERE id = $10",
 		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cep, cliente.Cidade, cliente.Cpf, cliente.Rua, cliente.Estado, cliente.Bairro, id)
 
 	if err != nil {
