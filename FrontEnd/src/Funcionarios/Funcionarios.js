@@ -20,14 +20,14 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
-import { validarCPF, FormatarSalario } from "../Helpers";
+import { validarCPF, FormatarSalario, verificarCpf } from "../Helpers";
 
 import "./Funcionarios.css";
 
 const CARGOS = {
-  ["BARBEIRO"]: "Barbeiro",
-  ["SECRETARIA"]: "Secretaria",
-  ["CEO"]: "CEO",
+  BARBEIRO: "Barbeiro",
+  SECRETARIA: "Secretaria",
+  CEO: "CEO",
 };
 
 const Funcionarios = () => {
@@ -46,12 +46,26 @@ const Funcionarios = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [cpfError, setCpfError] = useState(false);
+  const [cpfExiste, setCpfExiste] = useState("");
+  const [openDelete, setOpenDelete] = useState(false);
+  const [funcionarioParaExcluir, setFuncionarioParaExcluir] = useState(null);
+
+  const handleOpenDelete = (id) => {
+    setFuncionarioParaExcluir(id);
+    setOpenDelete(true);
+  };
+
+  const handleCloseDelete = () => {
+    setFuncionarioParaExcluir(null);
+    setOpenDelete(false);
+  };
 
   const fetchFuncionarios = async (page, searchTerm = "") => {
     try {
       const response = await axios.get("http://localhost:8080/funcionarios", {
         params: {
           page,
+          limit: 5,
           search: searchTerm,
         },
       });
@@ -71,7 +85,7 @@ const Funcionarios = () => {
     setPage(1);
   };
 
-  const handlePageChange = (event, value) => {
+  const handlePageChange = (_, value) => {
     setPage(value);
   };
 
@@ -84,6 +98,7 @@ const Funcionarios = () => {
     setCargo("");
     setSalario("");
     setOpen(false);
+    setCpfExiste(undefined);
   };
 
   const handleOpenEdit = (funcionario) => {
@@ -105,14 +120,28 @@ const Funcionarios = () => {
     setCpf("");
     setCargo("");
     setSalario("");
+    setCpfExiste(undefined);
   };
 
+  const handleSetSalario = (e) => {
+    let number = Number.parseFloat(e?.target?.value);
+    if (isNaN(number)) {
+      number = 0;
+    }
+    setSalario(number);
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validarCPF(cpf)) {
       setCpfError(true);
       return;
     }
+
+    const cpfDisponivel = await verificarCpf(cpf, "funcionario", setCpfExiste);
+    if (!cpfDisponivel) {
+      return; // CPF já existe ou ocorreu um erro
+    }
+
     try {
       const response = await axios.post("http://localhost:8080/funcionarios", {
         nome,
@@ -135,6 +164,12 @@ const Funcionarios = () => {
       setCpfError(true);
       return;
     }
+
+    const cpfDisponivel = await verificarCpf(cpf, "funcionario", setCpfExiste);
+    if (!cpfDisponivel) {
+      return; // CPF já existe ou ocorreu um erro
+    }
+
     try {
       await axios.put(`http://localhost:8080/funcionarios/${funcionario?.id}`, {
         nome,
@@ -147,7 +182,7 @@ const Funcionarios = () => {
       handleCloseEdit();
       fetchFuncionarios(page, searchTerm);
     } catch (error) {
-      setError("Erro ao editar funcionário");
+      setError("Erro ao editar funcionário.");
     }
   };
 
@@ -166,16 +201,24 @@ const Funcionarios = () => {
     }
     setCpf(formattedCpf);
     setCpfError(false);
+    setCpfExiste(undefined);
   };
-  const removerFuncionario = async (id) => {
+
+  const removerFuncionario = async () => {
     try {
-      await axios.delete(`http://localhost:8080/funcionarios/${id}`);
+      await axios.delete(
+        `http://localhost:8080/funcionarios/${funcionarioParaExcluir}`
+      );
       setFuncionarios(
-        funcionarios.filter((funcionario) => funcionario?.id !== id)
+        funcionarios.filter(
+          (funcionario) => funcionario?.id !== funcionarioParaExcluir
+        )
       );
     } catch (error) {
       setError("Erro ao remover funcionário");
     }
+    fetchFuncionarios();
+    handleCloseDelete();
   };
 
   const modalStyle = {
@@ -184,6 +227,8 @@ const Funcionarios = () => {
     left: "50%",
     transform: "translate(-50%, -50%)",
     width: 400,
+    max_height: "80vh",
+    overflow: "auto",
     bgcolor: "background.paper",
     boxShadow: 24,
     p: 4,
@@ -207,6 +252,34 @@ const Funcionarios = () => {
           Adicionar Funcionário
         </Button>
       </Box>
+
+      <Modal open={openDelete} onClose={handleCloseDelete}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" gutterBottom>
+            Confirmar Exclusão
+          </Typography>
+          <Typography>
+            Tem certeza de que deseja excluir este funcionário? Esta ação não
+            pode ser desfeita.
+          </Typography>
+          <Box display="flex" justifyContent="space-between" marginTop={2}>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleCloseDelete}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={removerFuncionario}
+            >
+              Confirmar
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* Modal Adicionar */}
       <Modal open={open} onClose={handleClose}>
@@ -241,9 +314,11 @@ const Funcionarios = () => {
               fullWidth
               label="CPF"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              onChange={handleSetCPF}
               margin="normal"
               required
+              error={cpfError || cpfExiste}
+              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
               inputProps={{ maxLength: 14 }}
             />
             <Select
@@ -263,7 +338,7 @@ const Funcionarios = () => {
               fullWidth
               label="Salário"
               value={salario}
-              onChange={(e) => setSalario(e.target.value)}
+              onChange={handleSetSalario}
               margin="normal"
               required
             />
@@ -316,8 +391,8 @@ const Funcionarios = () => {
               onChange={handleSetCPF}
               margin="normal"
               required
-              error={cpfError}
-              helperText={cpfError && "CPF inválido"}
+              error={cpfError || cpfExiste}
+              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
               inputProps={{ maxLength: 14 }}
             />
             <Select
@@ -337,7 +412,7 @@ const Funcionarios = () => {
               fullWidth
               label="Salário"
               value={salario}
-              onChange={(e) => setSalario(e.target.value)}
+              onChange={handleSetSalario}
               margin="normal"
               required
             />
@@ -386,7 +461,7 @@ const Funcionarios = () => {
                   </IconButton>
                   <IconButton
                     color="secondary"
-                    onClick={() => removerFuncionario(funcionario?.id)}
+                    onClick={() => handleOpenDelete(funcionario?.id)}
                   >
                     <DeleteIcon />
                   </IconButton>

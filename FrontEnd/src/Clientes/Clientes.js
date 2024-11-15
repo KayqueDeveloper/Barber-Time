@@ -19,7 +19,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import Pagination from "@mui/material/Pagination";
 import "./Clientes.css";
-import { validarCPF } from "../Helpers";
+import { validarCPF, verificarCpf } from "../Helpers";
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
@@ -40,6 +40,19 @@ const Clientes = () => {
   const [cidade, setCidade] = useState("");
   const [bairro, setBairro] = useState("");
   const [cpfError, setCpfError] = useState(false);
+  const [cpfExiste, setCpfExiste] = useState("");
+  const [openDelete, setOpenDelete] = useState(false);
+  const [ClienteParaExcluir, setClienteParaExcluir] = useState(null);
+
+  const handleOpenDelete = (id) => {
+    setClienteParaExcluir(id);
+    setOpenDelete(true);
+  };
+
+  const handleCloseDelete = () => {
+    setClienteParaExcluir(null);
+    setOpenDelete(false);
+  };
 
   const fetchClientes = async (page, searchTerm = "") => {
     try {
@@ -110,6 +123,11 @@ const Clientes = () => {
       return;
     }
 
+    const cpfDisponivel = await verificarCpf(cpf, "cliente", setCpfExiste);
+    if (!cpfDisponivel) {
+      return; // CPF já existe ou ocorreu um erro
+    }
+
     // Validação de email
     if (!validarEmail(email)) {
       setError("Email inválido");
@@ -144,7 +162,11 @@ const Clientes = () => {
       setCpfError(true);
       return;
     }
-    console.log(" passou");
+
+    const cpfDisponivel = await verificarCpf(cpf, "cliente", setCpfExiste);
+    if (!cpfDisponivel) {
+      return; // CPF já existe ou ocorreu um erro
+    }
 
     try {
       await axios.put(`http://localhost:8080/clientes/${cliente?.id}`, {
@@ -185,6 +207,7 @@ const Clientes = () => {
     setCidade("");
     setBairro("");
     setCpfError(false); // Reseta o erro de CPF
+    setCpfExiste(undefined);
   };
 
   const handleOpenEdit = async (cliente) => {
@@ -192,6 +215,12 @@ const Clientes = () => {
     setNome(cliente?.nome);
     setTelefone(cliente?.telefone);
     setEmail(cliente?.email);
+    setCpf(cliente?.cpf);
+    setCep(cliente?.cep);
+    setRua(cliente?.rua);
+    setEstado(cliente?.estado);
+    setCidade(cliente?.cidade);
+    setBairro(cliente?.bairro);
     setOpenEdit(true);
   };
 
@@ -210,14 +239,22 @@ const Clientes = () => {
     }
     setCpf(formattedCpf);
     setCpfError(false);
+    setCpfExiste(undefined);
   };
-  const removerCliente = async (id) => {
+
+  const removerCliente = async () => {
     try {
-      await axios.delete(`http://localhost:8080/clientes/${id}`);
-      setClientes(clientes?.filter((cliente) => cliente?.id !== id));
+      await axios.delete(
+        `http://localhost:8080/clientes/${ClienteParaExcluir}`
+      );
+      setClientes(
+        clientes?.filter((cliente) => cliente?.id !== ClienteParaExcluir)
+      );
     } catch (error) {
       setError("Erro ao remover cliente");
     }
+    fetchClientes(page, searchTerm);
+    handleCloseDelete();
   };
 
   const modalStyle = {
@@ -226,6 +263,8 @@ const Clientes = () => {
     left: "50%",
     transform: "translate(-50%, -50%)",
     width: 400,
+    max_height: "80vh",
+    overflow: "auto",
     bgcolor: "background.paper",
     boxShadow: 24,
     p: 4,
@@ -255,6 +294,34 @@ const Clientes = () => {
           Adicionar Cliente
         </Button>
       </Box>
+
+      <Modal open={openDelete} onClose={handleCloseDelete}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" gutterBottom>
+            Confirmar Exclusão
+          </Typography>
+          <Typography>
+            Tem certeza de que deseja excluir este cliente? Esta ação não pode
+            ser desfeita.
+          </Typography>
+          <Box display="flex" justifyContent="space-between" marginTop={2}>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleCloseDelete}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={removerCliente}
+            >
+              Confirmar
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
@@ -298,8 +365,8 @@ const Clientes = () => {
               onChange={handleSetCPF}
               margin="normal"
               required
-              error={cpfError}
-              helperText={cpfError && "CPF inválido"}
+              error={cpfError || cpfExiste}
+              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
               inputProps={{ maxLength: 14 }}
             />
             <TextField
@@ -394,8 +461,8 @@ const Clientes = () => {
               onChange={handleSetCPF}
               margin="normal"
               required
-              error={cpfError}
-              helperText={cpfError && "CPF inválido"}
+              error={cpfError || cpfExiste}
+              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
               inputProps={{ maxLength: 14 }}
             />
             <TextField
@@ -491,7 +558,7 @@ const Clientes = () => {
                   <IconButton
                     color="secondary"
                     aria-label="excluir cliente"
-                    onClick={() => removerCliente(cliente?.id)}
+                    onClick={() => handleOpenDelete(cliente?.id)}
                   >
                     <DeleteIcon />
                   </IconButton>

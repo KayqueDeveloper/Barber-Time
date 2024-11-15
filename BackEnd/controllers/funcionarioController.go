@@ -31,7 +31,7 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, err := strconv.Atoi(limitParam)
 	if err != nil || limit < 1 {
-		limit = 5 // Limite de funcionários por página
+		limit = 1000 // Limite de funcionários por página
 	}
 
 	offset := (page - 1) * limit
@@ -144,6 +144,9 @@ func CriarFuncionario(w http.ResponseWriter, r *http.Request) {
 		funcionario.Nome, funcionario.Especialidade, funcionario.Telefone, funcionario.Cargo, funcionario.Cpf, funcionario.Salario).Scan(&funcionario.ID)
 
 	if err != nil {
+		if err.Error() == "duplicar valor da chave viola a restrição de unicidade \"funcionarios_unique_cpf\"" {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

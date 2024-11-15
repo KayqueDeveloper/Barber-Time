@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export const validarCPF = (cpf) => {
   cpf = cpf.replace(/[^\d]+/g, ""); // Remove qualquer caractere não numérico
 
@@ -37,4 +39,21 @@ export const FormatarSalario = (salario) => {
     style: "currency",
     currency: "BRL",
   }).format(salario);
+};
+
+export const verificarCpf = async (cpf, table, setError) => {
+  try {
+    const response = await axios.post("http://localhost:8080/verificar-cpf", {
+      cpf,
+      table, // Certifique-se de que esta é a tabela correta
+    });
+    return response.status === 200; // CPF está liberado
+  } catch (error) {
+    if (error.response && error.response.status === 409) {
+      setError("CPF já cadastrado.");
+      return false;
+    }
+    setError("Erro ao verificar CPF.");
+    return false;
+  }
 };

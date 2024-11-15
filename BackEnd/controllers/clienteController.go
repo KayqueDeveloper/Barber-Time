@@ -32,7 +32,7 @@ func ListarClientes(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, err := strconv.Atoi(limitParam)
 	if err != nil || limit < 1 {
-		limit = 5 // Define o número de clientes por página (ajuste conforme necessário)
+		limit = 1000 // Define o número de clientes por página (ajuste conforme necessário)
 	}
 
 	// Offset para calcular a posição inicial da página
@@ -51,7 +51,7 @@ func ListarClientes(w http.ResponseWriter, r *http.Request) {
 	var clientes []models.Cliente
 	for rows.Next() {
 		var cliente models.Cliente
-		err := rows.Scan(&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm, &cliente.Cep, &cliente.Cidade, &cliente.Cpf, &cliente.Rua, &cliente.Estado, &cliente.Bairro)
+		err := rows.Scan(&cliente.ID, &cliente.Nome, &cliente.Telefone, &cliente.Email, &cliente.CriadoEm, &cliente.Cpf, &cliente.Cep, &cliente.Rua, &cliente.Bairro, &cliente.Cidade, &cliente.Estado)
 		if err != nil {
 			http.Error(w, "Erro ao escanear dados", http.StatusInternalServerError)
 			return
@@ -130,7 +130,7 @@ func CriarCliente(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	err = db.QueryRow("INSERT INTO barbearia.clientes (nome, telefone, email, criado_em, cpf, cep, rua, bairro, cidade, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8, $9) RETURNING id",
-		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cep, cliente.Cidade, cliente.Cpf, cliente.Rua, cliente.Estado, cliente.Bairro).Scan(&cliente.ID)
+		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cpf, cliente.Cep, cliente.Rua, cliente.Bairro, cliente.Cidade, cliente.Estado).Scan(&cliente.ID)
 
 	if err != nil {
 		http.Error(w, "Erro ao criar cliente", http.StatusInternalServerError)

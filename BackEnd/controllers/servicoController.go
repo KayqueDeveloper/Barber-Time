@@ -32,7 +32,7 @@ func ListarServicos(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, err := strconv.Atoi(limitParam)
 	if err != nil || limit < 1 {
-		limit = 5 // Número padrão de serviços por página
+		limit = 1000 // Número padrão de serviços por página
 	}
 
 	// Calcula o offset com base na página e no limite

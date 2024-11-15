@@ -47,6 +47,7 @@ func ConfigurarRotas() *mux.Router {
 	r.HandleFunc("/relatorios/funcionarios-mais-ativos", controllers.FuncionariosMaisAtivos).Methods("GET")
 
 	r.HandleFunc("/login", handlers.LoginHandler).Methods("POST")
+	r.HandleFunc("/verificar-cpf", handlers.CpfVerificacao).Methods("POST")
 
 	return r
 }
