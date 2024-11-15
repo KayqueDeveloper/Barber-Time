@@ -40,22 +40,18 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	query := "SELECT id, nome, especialidade, telefone, cargo, cpf, salario FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%'"
 
 	// Adicionando o filtro de cargo à query, se o parâmetro cargo for fornecido
-	if cargo != "" {
-		query += " AND LOWER(cargo) = LOWER($2)" // Usando LOWER para tornar a comparação case-insensitive
-	}
-
-	// Adicionando as cláusulas LIMIT e OFFSET
-	query += " ORDER BY nome LIMIT $3 OFFSET $4"
-
-	// Executando a consulta
 	var rows *sql.Rows
 	if cargo != "" {
+		query += " AND LOWER(cargo) = LOWER($2)" // Usando LOWER para comparação insensível a caso
+		query += " ORDER BY nome LIMIT $3 OFFSET $4"
 		rows, err = db.Query(query, search, cargo, limit, offset)
 	} else {
+		query += " ORDER BY nome LIMIT $2 OFFSET $3"
 		rows, err = db.Query(query, search, limit, offset)
 	}
+
 	if err != nil {
-		http.Error(w, "Erro ao buscar dados", http.StatusInternalServerError)
+		http.Error(w, "Erro ao buscar dados: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -78,8 +74,9 @@ func ListarFuncionarios(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = db.QueryRow("SELECT COUNT(*) FROM barbearia.funcionarios WHERE nome ILIKE '%' || $1 || '%'", search).Scan(&totalFuncionarios)
 	}
+
 	if err != nil {
-		http.Error(w, "Erro ao contar funcionários", http.StatusInternalServerError)
+		http.Error(w, "Erro ao contar funcionários: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
