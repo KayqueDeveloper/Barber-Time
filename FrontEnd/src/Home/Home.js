@@ -1,4 +1,3 @@
-// Dashboard.js
 import React, { useEffect, useState } from "react";
 import {
   Grid,
@@ -9,46 +8,71 @@ import {
   Button,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Calendar, momentLocalizer } from "react-big-calendar";
+import axios from "axios";
 import moment from "moment";
+import "moment/locale/pt-br";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import "./Home.css";
+import styled from "styled-components";
+import PeopleIcon from "@mui/icons-material/People";
+import WorkIcon from "@mui/icons-material/Work";
+import BuildIcon from "@mui/icons-material/Build";
 
-const localizer = momentLocalizer(moment);
+// Define os estilos do Dashboard
+const DashboardContainer = styled.div`
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color: white;
+  min-height: 100vh;
+  padding: 24px;
+`;
+
+const DashboardCard = styled(Paper)`
+  text-align: center;
+  padding: 24px;
+  border-radius: 12px;
+  background: white;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+`;
+
+const IconContainer = styled.div`
+  background-color: #2575fc;
+  color: white;
+  padding: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+`;
+
+const CalendarContainer = styled(Paper)`
+  margin-top: 32px;
+  padding: 24px;
+  border-radius: 12px;
+  background: white;
+  color: #333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+`;
+
+// Configura o moment.js para usar o idioma português
+const localizer = momentLocalizer(moment); // Inicializa o localizador com o moment
 
 const Home = () => {
   const [numClientes, setNumClientes] = useState(0);
   const [numFuncionarios, setNumFuncionarios] = useState(0);
   const [numServicos, setNumServicos] = useState(0);
-  const [numAgendamentos, setNumAgendamentos] = useState(0);
-  const [agendaHoje, setAgendaHoje] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [events, setEvents] = useState([]); // Armazena agendamentos do backend
 
   const navigate = useNavigate();
 
-  const fetchAgendamentos = async () => {
-    try {
-      const response = await axios.get("http://localhost:8080/agendamentos");
-      const agendamentos = response.data?.map((agendamento) => ({
-        title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico}`,
-        start: new Date(agendamento?.data_agendamento), // Formatação correta
-        end: new Date(agendamento?.data_final_agendamento),
-        agendamento,
-      }));
-      setEvents(agendamentos);
-    } catch (error) {
-      console.error("Erro ao buscar agendamentos: ", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAgendamentos();
-  }, []);
-
-  // Função para buscar as métricas do backend
   const fetchMetrics = async () => {
     try {
       const [clientesRes, funcionariosRes, servicosRes, agendamentosRes] =
@@ -62,26 +86,15 @@ const Home = () => {
       setNumClientes(clientesRes.data.clientes.length);
       setNumFuncionarios(funcionariosRes.data.funcionarios.length);
       setNumServicos(servicosRes.data.servicos.length);
-      setNumAgendamentos(agendamentosRes.data.length);
 
-      const today = new Date().toISOString().split("T")[0];
-      const agendaHojeData = agendamentosRes.data.filter(
-        (agendamento) => agendamento.data_agendamento === today
-      );
-
-      // Transformar agendamentos em formato compatível com react-big-calendar
-      const events = agendaHojeData.map((agendamento) => ({
-        title: `${agendamento.cliente_nome} - ${agendamento.servico_nome}`,
-        start: new Date(
-          `${agendamento.data_agendamento}T${agendamento.hora_agendamento}`
-        ),
-        end: new Date(
-          `${agendamento.data_agendamento}T${agendamento.hora_agendamento}`
-        ),
-        allDay: false,
+      const events = agendamentosRes.data?.map((agendamento) => ({
+        title: ` ${agendamento?.nome_cliente} - ${agendamento?.nome_servico}`,
+        start: new Date(agendamento?.data_agendamento), // Formatação correta
+        end: new Date(agendamento?.data_final_agendamento),
+        agendamento,
       }));
 
-      setAgendaHoje(events);
+      setEvents(events);
       setLoading(false);
     } catch (error) {
       setError("Erro ao buscar métricas");
@@ -109,93 +122,94 @@ const Home = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <Typography variant="h4" gutterBottom>
+    <DashboardContainer>
+      <Typography variant="h4" gutterBottom align="center">
         Home
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
 
-      <Box
-        flexDirection="row"
-        display="flex"
-        justifyContent="space-evenly"
-        paddingBottom="24px"
-      >
-        {/* Card de Clientes */}
-        <Paper elevation={3} className="dashboard-card">
-          <Typography variant="h6" gutterBottom>
-            Clientes
-          </Typography>
-          <Typography variant="h4" color="primary">
-            {numClientes}
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/clientes")}
-            style={{ margin: "10px" }}
-          >
-            Ver Clientes
-          </Button>
-        </Paper>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={3}>
+          <DashboardCard>
+            <IconContainer>
+              <PeopleIcon fontSize="large" />
+            </IconContainer>
+            <Typography variant="h6">Clientes</Typography>
+            <Typography variant="h4">{numClientes}</Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/clientes")}
+            >
+              Ver Clientes
+            </Button>
+          </DashboardCard>
+        </Grid>
 
-        {/* Card de Funcionários */}
-        <Paper elevation={3} className="dashboard-card">
-          <Typography variant="h6" gutterBottom>
-            Funcionários
-          </Typography>
-          <Typography variant="h4" color="primary">
-            {numFuncionarios}
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/funcionarios")}
-            style={{ margin: "10px" }}
-          >
-            Ver Funcionários
-          </Button>
-        </Paper>
+        <Grid item xs={12} sm={6} md={3}>
+          <DashboardCard>
+            <IconContainer>
+              <WorkIcon fontSize="large" />
+            </IconContainer>
+            <Typography variant="h6">Funcionários</Typography>
+            <Typography variant="h4">{numFuncionarios}</Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/funcionarios")}
+            >
+              Ver Funcionários
+            </Button>
+          </DashboardCard>
+        </Grid>
 
-        {/* Card de Serviços */}
-        <Paper elevation={3} className="dashboard-card">
-          <Typography variant="h6" gutterBottom>
-            Serviços
-          </Typography>
-          <Typography variant="h4" color="primary">
-            {numServicos}
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/servicos")}
-            style={{ margin: "10px" }}
-          >
-            Ver Serviços
-          </Button>
-        </Paper>
-      </Box>
+        <Grid item xs={12} sm={6} md={3}>
+          <DashboardCard>
+            <IconContainer>
+              <BuildIcon fontSize="large" />
+            </IconContainer>
+            <Typography variant="h6">Serviços</Typography>
+            <Typography variant="h4">{numServicos}</Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/servicos")}
+            >
+              Ver Serviços
+            </Button>
+          </DashboardCard>
+        </Grid>
 
-      {/* Agenda do Dia com react-big-calendar */}
-      <Grid item xs={12}>
-        <Paper elevation={3} className="dashboard-card">
-          <Typography variant="h6" gutterBottom>
-            Agenda do Dia
-          </Typography>
-          <Calendar
-            localizer={localizer}
-            events={events} // Mostra os eventos no calendário
-            selectable // Permite selecionar um horário // Ação ao selecionar um horário
-            defaultView="agenda"
-            startAccessor="start"
-            endAccessor="end"
-            min={new Date().setHours(8, 0, 0)}
-            max={new Date().setHours(18, 0, 0)}
-            style={{ height: 400, margin: "20px 0" }}
-          />
-        </Paper>
+        <Grid item xs={12}>
+          <CalendarContainer>
+            <Typography variant="h6" gutterBottom>
+              Agenda do Dia
+            </Typography>
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 500 }}
+              defaultView="agenda"
+              messages={{
+                today: "Hoje",
+                previous: "Anterior",
+                next: "Próximo",
+                month: "Mês",
+                week: "Semana",
+                day: "Dia",
+                agenda: "Agenda",
+                noEventsInRange: "Nenhum evento neste período.",
+                event: "Evento",
+                allDay: "Dia inteiro",
+                moreEvents: "Mais eventos",
+              }}
+            />
+          </CalendarContainer>
+        </Grid>
       </Grid>
-    </div>
+    </DashboardContainer>
   );
 };
 

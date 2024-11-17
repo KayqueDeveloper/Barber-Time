@@ -164,7 +164,7 @@ func AtualizarCliente(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	_, err = db.Exec("UPDATE barbearia.clientes SET nome = $1, telefone = $2, email = $3, cpf = $4, cep = $5, rua = $6, bairro = $7, cidade = $8, estado = $9 WHERE id = $10",
-		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cep, cliente.Cidade, cliente.Cpf, cliente.Rua, cliente.Estado, cliente.Bairro, id)
+		cliente.Nome, cliente.Telefone, cliente.Email, cliente.Cpf, cliente.Cep, cliente.Rua, cliente.Bairro, cliente.Cidade, cliente.Estado, id)
 
 	if err != nil {
 		http.Error(w, "Erro ao atualizar cliente", http.StatusInternalServerError)

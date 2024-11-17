@@ -1,27 +1,66 @@
-// Login.js
 import React, { useState } from "react";
-import { Button, TextField, Typography, Paper, Box } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // Para redirecionamento
-import "./Login.css";
+
+import logo from "../logo.png";
+import fundo from "./fundo.jpg";
+
+const LoginContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-image: url(${fundo});
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+`;
+
+const LoginPaper = styled(Paper)`
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  border-radius: 8px;
+`;
+
+const LoginLogo = styled.img`
+  max-width: 150px;
+  margin-bottom: 16px;
+`;
+
+const LoginButton = styled(Button)`
+  margin-top: 16px;
+  font-weight: bold;
+`;
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // Hook para redirecionamento
+  const navigate = useNavigate();
 
-  // Função para validar e enviar as credenciais
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
     if (!email || !senha) {
-      setError("Por favor, preencha todos os campos.");
+      setError("Preencha todos os campos.");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
       const response = await axios.post("http://localhost:8080/login", {
         email,
@@ -39,51 +78,54 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <Paper elevation={3} className="login-paper">
-        <Typography variant="h4" gutterBottom>
-          Login
+    <LoginContainer>
+      <LoginPaper elevation={3}>
+        <LoginLogo src={logo} alt="Logo" />
+        <Typography variant="h5" gutterBottom>
+          Bem-vindo(a)
         </Typography>
-        {error && <Typography color="error">{error}</Typography>}
-
-        <form onSubmit={handleLogin}>
-          {/* Campo de Email */}
+        {error && (
+          <Alert severity="error" style={{ marginBottom: "16px" }}>
+            {error}
+          </Alert>
+        )}
+        <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
-            label="Email"
-            type="email"
+            label="E-mail"
+            variant="outlined"
+            margin="normal"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            margin="normal"
-            required
           />
-
-          {/* Campo de Senha */}
           <TextField
             fullWidth
             label="Senha"
             type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
+            variant="outlined"
             margin="normal"
-            required
+            value={senha}
+            onChange={(e) => {
+              console.log(e.target.value);
+              setSenha(e.target.value);
+            }}
           />
-
-          <Box mt={2}>
-            {/* Botão de Login */}
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={loading}
-            >
-              {loading ? "Entrando..." : "Entrar"}
-            </Button>
-          </Box>
+          <LoginButton
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Entrar"
+            )}
+          </LoginButton>
         </form>
-      </Paper>
-    </div>
+      </LoginPaper>
+    </LoginContainer>
   );
 };
 

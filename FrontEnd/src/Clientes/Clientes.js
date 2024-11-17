@@ -14,12 +14,25 @@ import {
   Typography,
   IconButton,
 } from "@mui/material";
+import { Card, CardContent, CardActions, Grid } from "@mui/material";
+
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import Pagination from "@mui/material/Pagination";
 import "./Clientes.css";
 import { validarCPF, verificarCpf } from "../Helpers";
+import styled from "styled-components";
+
+const CardContainer = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.3);
+`;
+
+const BotaoAdd = styled(Button)`
+  height: 56px;
+  border-radius: 8px;
+`;
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
@@ -59,7 +72,7 @@ const Clientes = () => {
       const response = await axios.get("http://localhost:8080/clientes", {
         params: {
           page,
-          limit: 5,
+          limit: 6,
           search: searchTerm,
         },
       });
@@ -263,7 +276,7 @@ const Clientes = () => {
     left: "50%",
     transform: "translate(-50%, -50%)",
     width: 400,
-    max_height: "80vh",
+    height: "80vh",
     overflow: "auto",
     bgcolor: "background.paper",
     boxShadow: 24,
@@ -272,7 +285,7 @@ const Clientes = () => {
 
   return (
     <div className="clientes-container">
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom color="white">
         Gerenciamento de Clientes
       </Typography>
       {error && <Typography color="error">{error}</Typography>}
@@ -288,295 +301,184 @@ const Clientes = () => {
           value={searchTerm}
           onChange={handleSearch}
           placeholder="Digite o nome do cliente"
-          variant="outlined"
+          variant="filled"
+          style={{ backgroundColor: "#fff", borderRadius: "8px" }}
         />
-        <Button variant="contained" color="primary" onClick={handleOpen}>
+        <BotaoAdd variant="contained" color="primary" onClick={handleOpen}>
           Adicionar Cliente
-        </Button>
+        </BotaoAdd>
       </Box>
+      <Box display="flex" flexDirection="column" alignItems="center">
+        <Grid container spacing={2}>
+          {clientes?.map((cliente) => (
+            <Grid item xs={12} sm={6} md={4} key={cliente.id}>
+              <CardContainer style={{ borderRadius: "12px" }}>
+                <CardContent>
+                  <Typography variant="h6">{cliente.nome}</Typography>
+                  <Typography variant="body2">
+                    Telefone: {cliente.telefone}
+                  </Typography>
+                  <Typography variant="body2">
+                    Email: {cliente.email}
+                  </Typography>
+                  <Typography variant="body2">CPF: {cliente.cpf}</Typography>
+                  <Typography variant="body2">CEP: {cliente.cep}</Typography>
+                </CardContent>
+                <CardActions>
+                  <IconButton
+                    onClick={() => handleOpenEdit(cliente)}
+                    color="primary"
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => handleOpenDelete(cliente.id)}
+                    color="secondary"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </CardActions>
+              </CardContainer>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="secondary"
+          sx={{ marginTop: "20px" }}
+        />
+      </Box>
+
+      <Modal open={open || openEdit} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" component="h2">
+            {openEdit ? "Editar Cliente" : "Adicionar Cliente"}
+          </Typography>
+          <form onSubmit={openEdit ? handleSubmitEdit : handleSubmit}>
+            <TextField
+              label="Nome"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+            />
+            <TextField
+              label="Telefone"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              required
+            />
+            <TextField
+              label="Email"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <TextField
+              label="CPF"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={cpf}
+              onChange={handleSetCPF}
+              required
+              error={cpfError || cpfExiste}
+              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
+              inputProps={{ maxLength: 14 }}
+            />
+            <TextField
+              label="CEP"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={cep}
+              onChange={(e) => buscarEnderecoPorCEP(e.target.value)}
+              required
+            />
+            <TextField
+              label="Rua"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={rua}
+              onChange={(e) => setRua(e.target.value)}
+            />
+            <TextField
+              label="Bairro"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={bairro}
+              onChange={(e) => setBairro(e.target.value)}
+            />
+            <TextField
+              label="Cidade"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+            />
+            <TextField
+              label="Estado"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              value={estado}
+              onChange={(e) => setEstado(e.target.value)}
+            />
+
+            <Box display="flex" justifyContent="flex-end">
+              <Button
+                onClick={handleClose}
+                color="secondary"
+                sx={{ marginRight: 2 }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={cpfError}
+              >
+                {openEdit ? "Salvar" : "Adicionar"}
+              </Button>
+            </Box>
+          </form>
+        </Box>
+      </Modal>
 
       <Modal open={openDelete} onClose={handleCloseDelete}>
         <Box sx={modalStyle}>
-          <Typography variant="h6" gutterBottom>
-            Confirmar Exclusão
+          <Typography variant="h6" component="h2">
+            Tem certeza de que deseja excluir este cliente?
           </Typography>
-          <Typography>
-            Tem certeza de que deseja excluir este cliente? Esta ação não pode
-            ser desfeita.
-          </Typography>
-          <Box display="flex" justifyContent="space-between" marginTop={2}>
+          <Box display="flex" justifyContent="flex-end" marginTop={2}>
             <Button
-              variant="contained"
-              color="secondary"
               onClick={handleCloseDelete}
+              color="secondary"
+              sx={{ marginRight: 2 }}
             >
               Cancelar
             </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={removerCliente}
-            >
+            <Button variant="contained" color="error" onClick={removerCliente}>
               Confirmar
             </Button>
           </Box>
         </Box>
       </Modal>
-
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
-            Adicionar Cliente
-          </Typography>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Nome"
-              value={nome}
-              onChange={(e) => setNome(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Telefone"
-              value={telefone}
-              onChange={(e) => setTelefone(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e?.target?.value)}
-              margin="normal"
-              required
-              error={error && error.includes("Email")}
-              helperText={
-                error && error.includes("Email") ? "Email inválido" : ""
-              }
-            />
-            <TextField
-              fullWidth
-              label="CPF"
-              value={cpf}
-              onChange={handleSetCPF}
-              margin="normal"
-              required
-              error={cpfError || cpfExiste}
-              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
-              inputProps={{ maxLength: 14 }}
-            />
-            <TextField
-              fullWidth
-              label="CEP"
-              value={cep}
-              onChange={(e) => setCep(e.target.value)}
-              onBlur={() => buscarEnderecoPorCEP(cep)} // Chama a função ao sair do campo
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Rua"
-              value={rua}
-              onChange={(e) => setRua(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Estado"
-              value={estado}
-              onChange={(e) => setEstado(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Cidade"
-              value={cidade}
-              onChange={(e) => setCidade(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Bairro"
-              value={bairro}
-              onChange={(e) => setBairro(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              style={{ marginTop: "16px" }}
-            >
-              Adicionar
-            </Button>
-          </form>
-        </Box>
-      </Modal>
-
-      <Modal open={openEdit} onClose={handleClose} on>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
-            Editar Cliente
-          </Typography>
-          <form onSubmit={handleSubmitEdit}>
-            <TextField
-              fullWidth
-              label="Nome"
-              value={nome}
-              onChange={(e) => setNome(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Telefone"
-              value={telefone}
-              onChange={(e) => setTelefone(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="CPF"
-              value={cpf}
-              onChange={handleSetCPF}
-              margin="normal"
-              required
-              error={cpfError || cpfExiste}
-              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
-              inputProps={{ maxLength: 14 }}
-            />
-            <TextField
-              fullWidth
-              label="CEP"
-              value={cep}
-              onChange={(e) => setCep(e.target.value)}
-              onBlur={() => buscarEnderecoPorCEP(cep)} // Chama a função ao sair do campo
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Rua"
-              value={rua}
-              onChange={(e) => setRua(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Estado"
-              value={estado}
-              onChange={(e) => setEstado(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Cidade"
-              value={cidade}
-              onChange={(e) => setCidade(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Bairro"
-              value={bairro}
-              onChange={(e) => setBairro(e?.target?.value)}
-              margin="normal"
-              required
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              style={{ marginTop: "16px" }}
-            >
-              Salvar
-            </Button>
-          </form>
-        </Box>
-      </Modal>
-
-      <TableContainer component={Paper} style={{ marginTop: "20px" }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>Telefone</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>CPF</TableCell>
-              <TableCell>CEP</TableCell>
-              <TableCell>Rua</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell>Cidade</TableCell>
-              <TableCell>Bairro</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {clientes?.map((cliente) => (
-              <TableRow key={cliente?.id}>
-                <TableCell>{cliente?.nome}</TableCell>
-                <TableCell>{cliente?.telefone}</TableCell>
-                <TableCell>{cliente?.email}</TableCell>
-                <TableCell>{cliente?.cpf}</TableCell>
-                <TableCell>{cliente?.cep}</TableCell>
-                <TableCell>{cliente?.rua}</TableCell>
-                <TableCell>{cliente?.estado}</TableCell>
-                <TableCell>{cliente?.cidade}</TableCell>
-                <TableCell>{cliente?.bairro}</TableCell>
-                <TableCell>
-                  <IconButton
-                    color="primary"
-                    aria-label="editar cliente"
-                    onClick={() => handleOpenEdit(cliente)}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    color="secondary"
-                    aria-label="excluir cliente"
-                    onClick={() => handleOpenDelete(cliente?.id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Paginação */}
-      <Pagination
-        count={totalPages}
-        page={page}
-        onChange={handlePageChange}
-        color="primary"
-        style={{ marginTop: "20px", display: "flex", justifyContent: "center" }}
-      />
     </div>
   );
 };
