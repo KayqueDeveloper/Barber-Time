@@ -86,6 +86,8 @@ const Clientes = () => {
   };
 
   const buscarEnderecoPorCEP = async (cep) => {
+    setCep(cep); // Garante que o CEP não seja modificado
+
     if (cep.length === 8) {
       // Verifica se o CEP tem 8 dígitos
       try {
@@ -148,7 +150,7 @@ const Clientes = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:8080/clientes", {
+      await axios.post("http://localhost:8080/clientes", {
         nome,
         telefone,
         email,
@@ -159,7 +161,6 @@ const Clientes = () => {
         cidade,
         bairro,
       });
-      setClientes([...clientes, response.data]);
       handleClose();
       resetForm();
     } catch (error) {
@@ -281,6 +282,7 @@ const Clientes = () => {
     bgcolor: "background.paper",
     boxShadow: 24,
     p: 4,
+    borderRadius: "4px",
   };
 
   return (
@@ -461,7 +463,7 @@ const Clientes = () => {
       </Modal>
 
       <Modal open={openDelete} onClose={handleCloseDelete}>
-        <Box sx={modalStyle}>
+        <Box sx={{ ...modalStyle, height: "120px" }}>
           <Typography variant="h6" component="h2">
             Tem certeza de que deseja excluir este cliente?
           </Typography>

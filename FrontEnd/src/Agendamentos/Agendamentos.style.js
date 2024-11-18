@@ -26,7 +26,7 @@ export const AgendamentoDetalhes = styled.div`
 export const labels = styled.div`
   display: flex;
   flex-direction: row;
-  whidth: 100%;
+  width: 100%; // Fixed property name from 'whidth' to 'width'
 `;
 
 export const BotoesModal = styled.div`
