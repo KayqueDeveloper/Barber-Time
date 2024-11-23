@@ -11,10 +11,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
 } from "@mui/material";
+import "moment/locale/pt-br";
 import dayjs from "dayjs"; // Usaremos dayjs para trabalhar com as datas no form
 
 import * as S from "./Agendamentos.style";
+import "./Agendamentos.css";
 
 const localizer = momentLocalizer(moment);
 
@@ -113,6 +116,7 @@ const CalendarComponent = () => {
     setCliente("");
     setFuncionario("");
     setServico("");
+    setError("");
   };
 
   const handleCloseVerAgendamento = () => {
@@ -199,9 +203,10 @@ const CalendarComponent = () => {
     });
 
     if (isDateConflicting) {
-      console.log("Conflito: a data selecionada já está ocupada.");
+      setError("Conflito: o barbeiro já está com o horario ocupado.");
+      setFuncionario("");
     } else {
-      console.log("A data selecionada está disponível.");
+      setError("");
       setFuncionario(event?.target?.value);
     }
   };
@@ -211,25 +216,56 @@ const CalendarComponent = () => {
   };
 
   return (
-    <div>
-      <Typography variant="h4" gutterBottom>
-        Agendamento de Barbearia
-      </Typography>
+    <div className="agendamentos-container">
+      <React.Fragment>
+        <Typography
+          variant="h4"
+          gutterBottom
+          align="center"
+          style={{ marginBottom: "20px", color: "white" }}
+        >
+          Agendamento de Barbearia
+        </Typography>
 
-      {/* Calendário */}
-      <Calendar
-        localizer={localizer}
-        events={events} // Mostra os eventos no calendário
-        selectable // Permite selecionar um horário
-        onSelectEvent={handleClickEvent}
-        onSelectSlot={handleSelectSlot} // Ação ao selecionar um horário
-        defaultView="day"
-        startAccessor="start"
-        endAccessor="end"
-        min={new Date().setHours(8, 0, 0)}
-        max={new Date().setHours(18, 0, 0)}
-        style={{ height: 700, margin: "50px" }}
-      />
+        <S.CalendarWrapper>
+          <Calendar
+            localizer={localizer}
+            events={events} // Mostra os eventos no calendário
+            selectable // Permite selecionar um horário
+            onSelectEvent={handleClickEvent}
+            onSelectSlot={handleSelectSlot} // Ação ao selecionar um horário
+            defaultView="day"
+            startAccessor="start"
+            endAccessor="end"
+            min={new Date().setHours(8, 0, 0)}
+            max={new Date().setHours(18, 0, 0)}
+            style={{
+              height: 700,
+              margin: "20px auto",
+              padding: "10px",
+              background: "#f8f9fa",
+              borderRadius: "10px",
+              boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+            }}
+            messages={{
+              today: "Hoje",
+              previous: "Anterior",
+              next: "Próximo",
+              month: "Mês",
+              week: "Semana",
+              day: "Dia",
+              agenda: "Agenda",
+              noEventsInRange: "Nenhum evento neste período.",
+              event: "Evento",
+              allDay: "Dia inteiro",
+              moreEvents: "Mais eventos",
+              date: "Data",
+              time: "Hora",
+              eventTitle: "Título do Evento",
+            }}
+          />
+        </S.CalendarWrapper>
+      </React.Fragment>
 
       {/* Modal para Confirmar Agendamento */}
       <Modal open={modalOpen} onClose={handleCloseModal}>
@@ -237,6 +273,11 @@ const CalendarComponent = () => {
           <Typography variant="h6" gutterBottom>
             Confirmar Agendamento
           </Typography>
+          {error && (
+            <Alert severity="error" className="error-message">
+              {error}
+            </Alert>
+          )}
           <S.formulario>
             <FormControl fullWidth>
               <InputLabel id="demo-simple-select-label">Cliente</InputLabel>
@@ -248,7 +289,9 @@ const CalendarComponent = () => {
                 onChange={handleChangeCliente}
               >
                 {clientes?.map((client, _) => (
-                  <MenuItem value={client?.id}>{client?.nome}</MenuItem>
+                  <MenuItem value={client?.id}>
+                    {client?.nome} - {client?.cpf}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>

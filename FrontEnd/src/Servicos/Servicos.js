@@ -7,6 +7,7 @@ import {
   Typography,
   IconButton,
   Grid,
+  Alert,
   Pagination,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -143,8 +144,11 @@ const Servicos = () => {
       <Typography variant="h4" gutterBottom color="white">
         Gerenciamento de Serviços
       </Typography>
-      {error && <Typography color="error">{error}</Typography>}
-
+      {error && (
+        <Alert severity="error" className="error-message">
+          {error}
+        </Alert>
+      )}
       <Box
         display="flex"
         justifyContent="space-between"

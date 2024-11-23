@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Modal,
   Box,
   TextField,
   Typography,
   IconButton,
+  Alert,
 } from "@mui/material";
 import { Card, CardContent, CardActions, Grid } from "@mui/material";
 
@@ -138,7 +132,12 @@ const Clientes = () => {
       return;
     }
 
-    const cpfDisponivel = await verificarCpf(cpf, "cliente", setCpfExiste);
+    const cpfDisponivel = await verificarCpf(
+      cliente?.id,
+      cpf,
+      "cliente",
+      setCpfExiste
+    );
     if (!cpfDisponivel) {
       return; // CPF já existe ou ocorreu um erro
     }
@@ -177,7 +176,12 @@ const Clientes = () => {
       return;
     }
 
-    const cpfDisponivel = await verificarCpf(cpf, "cliente", setCpfExiste);
+    const cpfDisponivel = await verificarCpf(
+      cliente?.id,
+      cpf,
+      "cliente",
+      setCpfExiste
+    );
     if (!cpfDisponivel) {
       return; // CPF já existe ou ocorreu um erro
     }
@@ -290,8 +294,11 @@ const Clientes = () => {
       <Typography variant="h4" gutterBottom color="white">
         Gerenciamento de Clientes
       </Typography>
-      {error && <Typography color="error">{error}</Typography>}
-
+      {error && (
+        <Alert severity="error" className="error-message">
+          {error}
+        </Alert>
+      )}
       <Box
         display="flex"
         justifyContent="space-between"
@@ -314,7 +321,7 @@ const Clientes = () => {
         <Grid container spacing={2}>
           {clientes?.map((cliente) => (
             <Grid item xs={12} sm={6} md={4} key={cliente.id}>
-              <CardContainer style={{ borderRadius: "12px" }}>
+              <CardContainer style={{ borderRadius: "4px" }}>
                 <CardContent>
                   <Typography variant="h6">{cliente.nome}</Typography>
                   <Typography variant="body2">

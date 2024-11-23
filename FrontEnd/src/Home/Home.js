@@ -204,6 +204,9 @@ const Home = () => {
                 event: "Evento",
                 allDay: "Dia inteiro",
                 moreEvents: "Mais eventos",
+                date: "Data",
+                time: "Hora",
+                eventTitle: "Título do Evento",
               }}
             />
           </CalendarContainer>

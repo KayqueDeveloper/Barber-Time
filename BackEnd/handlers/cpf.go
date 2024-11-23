@@ -5,17 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"regexp"
 )
 
 type CpfRequest struct {
+	Id    int    `json:id"`
 	Cpf   string `json:"cpf"`
 	Table string `json:"table"`
-}
-
-func sanitizeCPF(cpf string) string {
-	re := regexp.MustCompile(`\D`) // Remove caracteres não numéricos
-	return re.ReplaceAllString(cpf, "")
 }
 
 func CpfVerificacao(w http.ResponseWriter, r *http.Request) {
@@ -45,12 +40,12 @@ func CpfVerificacao(w http.ResponseWriter, r *http.Request) {
 	var query string
 
 	if cpfReq.Table == "cliente" {
-		query = "SELECT id FROM barbearia.clientes WHERE cpf = $1"
+		query = "SELECT id FROM barbearia.clientes WHERE cpf = $1 AND id != $2"
 	} else {
-		query = "SELECT id FROM barbearia.funcionarios WHERE cpf = $1"
+		query = "SELECT id FROM barbearia.funcionarios WHERE cpf = $1 AND id != $2"
 	}
 
-	err = db.QueryRow(query, cpfReq.Cpf).Scan(&id)
+	err = db.QueryRow(query, cpfReq.Cpf, cpfReq.Id).Scan(&id)
 	if err == sql.ErrNoRows {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("CPF liberado"))

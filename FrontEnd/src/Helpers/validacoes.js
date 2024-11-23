@@ -41,11 +41,12 @@ export const FormatarSalario = (salario) => {
   }).format(salario);
 };
 
-export const verificarCpf = async (cpf, table, setError) => {
+export const verificarCpf = async (id, cpf, table, setError) => {
   try {
     const response = await axios.post("http://localhost:8080/verificar-cpf", {
+      id,
       cpf,
-      table, // Certifique-se de que esta é a tabela correta
+      table,
     });
     return response.status === 200; // CPF está liberado
   } catch (error) {

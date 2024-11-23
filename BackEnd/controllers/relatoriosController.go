@@ -113,3 +113,56 @@ func FuncionariosMaisAtivos(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(funcionariosMaisAtivos)
 }
+
+// Faturamento por mês
+func RelatorioFaturamento(w http.ResponseWriter, r *http.Request) {
+	db, err := db.Conectar()
+	if err != nil {
+		http.Error(w, "Erro ao conectar ao banco de dados", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Query para calcular o faturamento por mês
+	query := `
+		SELECT 
+			TO_CHAR(data_agendamento, 'YYYY-MM') AS mes,
+			SUM(preco) AS valor
+		FROM barbearia.agendamentos
+		JOIN barbearia.servicos ON agendamentos.servico_id = servicos.id
+		GROUP BY mes
+		ORDER BY mes;
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, "Erro ao executar a consulta", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var faturamento []struct {
+		Mes   string  `json:"mes"`
+		Valor float64 `json:"valor"`
+	}
+
+	for rows.Next() {
+		var mes string
+		var valor float64
+
+		err = rows.Scan(&mes, &valor)
+		if err != nil {
+			http.Error(w, "Erro ao processar os dados", http.StatusInternalServerError)
+			return
+		}
+
+		faturamento = append(faturamento, struct {
+			Mes   string  `json:"mes"`
+			Valor float64 `json:"valor"`
+		}{Mes: mes, Valor: valor})
+	}
+
+	// Retornar os dados no formato JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(faturamento)
+}

@@ -8,6 +8,7 @@ import {
   IconButton,
   Select,
   MenuItem,
+  Alert,
 } from "@mui/material";
 import { Card, CardContent, CardActions, Grid } from "@mui/material";
 
@@ -115,6 +116,11 @@ const Funcionarios = () => {
       return;
     }
 
+    const cpfDisponivel = await verificarCpf(funcionario?.id, cpf, "funcionario", setCpfExiste);
+    if (!cpfDisponivel) {
+      return;
+    }
+
     try {
       await axios.post("http://localhost:8080/funcionarios", {
         nome,
@@ -138,7 +144,7 @@ const Funcionarios = () => {
       return;
     }
 
-    const cpfDisponivel = await verificarCpf(cpf, "funcionario", setCpfExiste);
+    const cpfDisponivel = await verificarCpf(funcionario?.id, cpf, "funcionario", setCpfExiste);
     if (!cpfDisponivel) {
       return; // CPF já existe ou ocorreu um erro
     }
@@ -153,6 +159,7 @@ const Funcionarios = () => {
         salario,
       });
       resetForm();
+      setOpenEdit(false);
       fetchFuncionarios(page, searchTerm);
     } catch (error) {
       setError("Erro ao editar funcionário.");
@@ -229,7 +236,11 @@ const Funcionarios = () => {
       <Typography variant="h4" gutterBottom color="white">
         Gerenciamento de Funcionários
       </Typography>
-      {error && <Typography color="error">{error}</Typography>}
+      {error && (
+        <Alert severity="error" className="error-message">
+          {error}
+        </Alert>
+      )}
 
       <Box
         display="flex"
@@ -301,6 +312,14 @@ const Funcionarios = () => {
         <Box sx={modalStyle}>
           <Typography variant="h6" component="h2">
             {openEdit ? "Editar Funcionário" : "Adicionar Funcionário"}
+          </Typography>
+          {error && (
+            <Alert severity="error" className="error-message">
+              {error}
+            </Alert>
+          )}
+          <Typography variant="body1" gutterBottom color="info">
+            Os campos obrigatórios estão marcados com '*'     
           </Typography>
           <form onSubmit={openEdit ? handleSubmitEdit : handleSubmit}>
             <TextField

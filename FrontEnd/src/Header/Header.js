@@ -13,7 +13,7 @@ const Header = () => {
       <Toolbar>
         {/* Nome do Sistema/Empresa */}
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Barber Management System
+          Barbearia Time
         </Typography>
 
         {/* Botões de Navegação */}
