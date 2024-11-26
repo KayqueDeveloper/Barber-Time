@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const queryGetAll = "   SELECT a.id AS id, a.cliente_id, a.funcionario_id, a.servico_id, a.data_agendamento, a.data_final_agendamento, a.status, a.criado_em, c.nome AS nome_cliente, s.nome as nome_servico FROM barbearia.agendamentos a LEFT JOIN barbearia.clientes c ON c.id = a.cliente_id left join barbearia.servicos s on s.id = a.servico_id "
+const queryGetAll = "   SELECT a.id AS id, a.cliente_id, a.funcionario_id, a.servico_id, a.data_agendamento, a.data_final_agendamento, a.status, a.criado_em, c.nome AS nome_cliente, s.nome as nome_servico, f.nome as nome_funcionario FROM barbearia.agendamentos a LEFT JOIN barbearia.clientes c ON c.id = a.cliente_id left join barbearia.servicos s on s.id = a.servico_id LEFT JOIN barbearia.funcionarios f ON f.id = a.funcionario_id "
 
 // Listar todos os agendamentos
 func ListarAgendamentos(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func ListarAgendamentos(w http.ResponseWriter, r *http.Request) {
 	var agendamentos []models.Agendamento
 	for rows.Next() {
 		var agendamento models.Agendamento
-		err := rows.Scan(&agendamento.ID, &agendamento.ClienteID, &agendamento.FuncionarioID, &agendamento.ServicoID, &agendamento.DataAgendamento, &agendamento.DataFinalAgendamento, &agendamento.Status, &agendamento.CriadoEm, &agendamento.NomeCliente, &agendamento.NomeServico)
+		err := rows.Scan(&agendamento.ID, &agendamento.ClienteID, &agendamento.FuncionarioID, &agendamento.ServicoID, &agendamento.DataAgendamento, &agendamento.DataFinalAgendamento, &agendamento.Status, &agendamento.CriadoEm, &agendamento.NomeCliente, &agendamento.NomeServico, &agendamento.NomeFuncionario)
 		if err != nil {
 			fmt.Println("Error:", err)
 			http.Error(w, "Erro ao escanear dados", http.StatusInternalServerError)

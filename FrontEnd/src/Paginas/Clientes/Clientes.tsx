@@ -374,7 +374,6 @@ const Clientes: React.FC = () => {
               margin="normal"
               value={cliente?.cep}
               onChange={(e) => buscarEnderecoPorCEP(e.target.value)}
-              required
             />
             <TextField
               label="Rua"

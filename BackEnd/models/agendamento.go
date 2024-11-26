@@ -11,4 +11,5 @@ type Agendamento struct {
 	CriadoEm             string `json:"criado_em"`
 	NomeCliente          string `json:"nome_cliente"`
 	NomeServico          string `json:"nome_servico"`
+	NomeFuncionario      string `json:"nome_funcionario"`
 }

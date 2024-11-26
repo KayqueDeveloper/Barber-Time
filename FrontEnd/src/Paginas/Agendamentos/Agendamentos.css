@@ -2,6 +2,7 @@
 
   /* Clientes.css */
 .agendamentos-container {
+  height: 90vh;
   background: linear-gradient(135deg, #6a11cb, #2575fc);
     padding: 20px;
   }
@@ -10,8 +11,6 @@
     margin-bottom: 20px;
     color: #333;
   }
-
-  
   
   .agendamentos-table {
     width: 100%;

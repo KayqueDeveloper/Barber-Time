@@ -16,7 +16,7 @@ export const ModalStyle = styled.div`
   gap: 20px;
 `;
 
-export const formulario = styled.div`
+export const formulario = styled.form`
   display: flex;
   flex-direction: column;
   gap: 15px;
