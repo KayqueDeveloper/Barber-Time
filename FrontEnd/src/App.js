@@ -1,14 +1,14 @@
 // App.js
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Login from "./Login";
-import Home from "./Home";
-import Agendamentos from "./Agendamentos";
-import Clientes from "./Clientes";
-import Servicos from "./Servicos";
-import Funcionarios from "./Funcionarios";
-import Relatorios from "./Relatorios";
-import Header from "./Header";
+import { Agendamentos } from "./Paginas/Agendamentos/Agendamentos.tsx";
+import Login from "./Paginas/Login/Login.tsx";
+import Header from "./Componentes/Header/Header.tsx";
+import Clientes from "./Paginas/Clientes/Clientes.tsx";
+import Servicos from "./Paginas/Servicos/Servicos.tsx";
+import Funcionarios from "./Paginas/Funcionarios/Funcionarios.tsx";
+import Relatorios from "./Paginas/Relatorios/Relatorios.tsx";
+import Home from "./Paginas/Home/Home.tsx";
 
 function App() {
   return (
