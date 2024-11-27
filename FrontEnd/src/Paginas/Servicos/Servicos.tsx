@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Button,
   Modal,
@@ -7,158 +7,47 @@ import {
   Typography,
   IconButton,
   Grid,
-  Alert,
   Pagination,
+  Alert,
+  Snackbar,
+  CardActions,
+  CardContent,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import axios from "axios";
-import styled from "styled-components";
 import "./Servicos.css";
-import { FormatarSalario } from "../../Helpers/validacoes.ts";
+import { useServicos } from "./servico.data.ts";
 
-// Tipos para serviços e resposta da API
-interface Servico {
-  id: number;
-  nome: string;
-  preco: number;
-  duracao: number;
-}
+import * as S from "./Servicos.style.ts";
 
-interface ServicosResponse {
-  servicos: Servico[];
-  totalPages: number;
-}
-
-// Estilização com styled-components
-const CardContainer = styled.div`
-  border-radius: 12px;
-  box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.3);
-  background-color: #fff;
-  padding: 16px;
-`;
-
-const BotaoAdd = styled(Button)`
-  height: 56px;
-  border-radius: 8px;
-`;
-
-const Servicos: React.FC = () => {
-  const [servicos, setServicos] = useState<Servico[]>([]);
-  const [servico, setServico] = useState<Servico | null>(null);
-  const [open, setOpen] = useState<boolean>(false);
-  const [openEdit, setOpenEdit] = useState<boolean>(false);
-  const [nome, setNome] = useState<string>("");
-  const [preco, setPreco] = useState<string>("");
-  const [duracao, setDuracao] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [page, setPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-
-  // Função para buscar serviços
-  const fetchServicos = async (page: number, searchTerm: string = "") => {
-    try {
-      const response = await axios.get<ServicosResponse>(
-        "http://localhost:8080/servicos",
-        {
-          params: {
-            page,
-            search: searchTerm,
-          },
-        }
-      );
-      setServicos(response.data.servicos);
-      setTotalPages(response.data.totalPages);
-    } catch {
-      setError("Erro ao buscar serviços");
-    }
-  };
-
-  useEffect(() => {
-    fetchServicos(page, searchTerm);
-  }, [page, searchTerm]);
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setPage(1);
-  };
-
-  const handlePageChange = (
-    event: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
-    setPage(value);
-  };
-
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => {
-    setNome("");
-    setPreco("");
-    setDuracao("");
-    setOpen(false);
-    setOpenEdit(false);
-  };
-
-  const handleOpenEdit = (servico: Servico) => {
-    setServico(servico);
-    setNome(servico?.nome || "");
-    setPreco(servico?.preco.toString() || "");
-    setDuracao(servico?.duracao.toString() || "");
-    setOpenEdit(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post<Servico>(
-        "http://localhost:8080/servicos",
-        {
-          nome,
-          preco: parseFloat(preco),
-          duracao: parseInt(duracao, 10),
-        }
-      );
-      setServicos([...servicos, response.data]);
-      handleClose();
-    } catch {
-      setError("Erro ao adicionar serviço");
-    }
-  };
-
-  const handleSubmitEdit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!servico) return;
-    try {
-      await axios.put(`http://localhost:8080/servicos/${servico.id}`, {
-        nome,
-        preco: parseFloat(preco),
-        duracao: parseInt(duracao, 10),
-      });
-      fetchServicos(page, searchTerm);
-    } catch {
-      setError("Erro ao editar serviço");
-    }
-    handleClose();
-  };
-
-  const removerServico = async (id: number) => {
-    try {
-      await axios.delete(`http://localhost:8080/servicos/${id}`);
-      setServicos(servicos.filter((servico) => servico.id !== id));
-    } catch {
-      setError("Erro ao remover serviço");
-    }
-  };
-
-  const handleSetPreco = (e) => {
-    let number = Number.parseFloat(e?.target?.value?.replace(/\D/g, ""));
-    if (isNaN(number)) {
-      number = 0;
-    }
-    console.log(e?.target?.value);
-    setPreco((number / 100).toString());
-  };
+const Servicos = () => {
+  const {
+    searchTermo,
+    definirTermo,
+    abrirModal,
+    servicos,
+    abrirEditor,
+    removerServico,
+    totalPaginas,
+    pagina,
+    mudarDePagina,
+    abrir,
+    abrirEdicao,
+    fecharModal,
+    enviarEdicao,
+    salvarServico,
+    nome,
+    setNome,
+    preco,
+    definirSalario,
+    duracao,
+    setDuracao,
+    FormatarSalario,
+    snackbarSeverity,
+    snackbarMessage,
+    snackbarOpen,
+    setSnackbarOpen,
+  } = useServicos();
 
   const modalStyle = {
     position: "absolute" as const,
@@ -175,14 +64,22 @@ const Servicos: React.FC = () => {
 
   return (
     <div className="servicos-container">
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000} // Tempo em milissegundos para desaparecer
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
       <Typography variant="h4" gutterBottom color="white">
         Gerenciamento de Serviços
       </Typography>
-      {error && (
-        <Alert severity="error" className="error-message">
-          {error}
-        </Alert>
-      )}
       <Box
         display="flex"
         justifyContent="space-between"
@@ -191,32 +88,68 @@ const Servicos: React.FC = () => {
       >
         <TextField
           label="Buscar por Nome"
-          value={searchTerm}
-          onChange={handleSearch}
+          value={searchTermo}
+          onChange={definirTermo}
           placeholder="Digite o nome do serviço"
           variant="filled"
           style={{ backgroundColor: "#fff", borderRadius: "8px" }}
         />
-        <BotaoAdd variant="contained" color="primary" onClick={handleOpen}>
+        <S.BotaoAdd variant="contained" color="primary" onClick={abrirModal}>
           Adicionar Serviço
-        </BotaoAdd>
+        </S.BotaoAdd>
       </Box>
       <Box display="flex" flexDirection="column" alignItems="center">
         <Grid container spacing={2}>
-          {servicos.map((servico) => (
+          {servicos?.map((servico) => (
             <Grid item xs={12} sm={6} md={4} key={servico.id}>
-              <CardContainer>
-                <Typography variant="h6">{servico.nome}</Typography>
-                <Typography variant="body2">
-                  Preço: R$ {servico.preco}
-                </Typography>
-                <Typography variant="body2">
-                  Duração: {servico.duracao} min
-                </Typography>
-                <Box display="flex" justifyContent="flex-end">
+              <S.CardContainer
+                style={{
+                  borderRadius: "16px",
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  padding: "16px",
+                  background: "rgba(255, 255, 255, 0.2)", // Fundo translúcido
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)", // Sombra
+                  backdropFilter: "blur(10px)", // Desfoque no fundo
+                  border: "1px solid rgba(255, 255, 255, 0.3)", // Borda semi-transparente
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease", // Transições suaves
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.03)"; // Aumenta ligeiramente o tamanho
+                  e.currentTarget.style.boxShadow =
+                    "0 12px 40px rgba(0, 0, 0, 0.3)"; // Aumenta a sombra
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)"; // Volta ao tamanho original
+                  e.currentTarget.style.boxShadow =
+                    "0 8px 32px rgba(0, 0, 0, 0.2)"; // Volta à sombra original
+                }}
+              >
+                <CardContent>
+                  <Typography
+                    variant="h6"
+                    style={{ fontWeight: "bold", color: "white" }}
+                  >
+                    {servico.nome}
+                  </Typography>
+                  <Typography variant="body2" color="white">
+                    <span style={{ fontWeight: "bold", color: "white" }}>
+                      Preço:
+                    </span>{" "}
+                    {FormatarSalario(servico.preco)}
+                  </Typography>
+                  <Typography variant="body2" color="white">
+                    <span style={{ fontWeight: "bold", color: "white" }}>
+                      Duração:
+                    </span>{" "}
+                    {servico.duracao} min
+                  </Typography>
+                </CardContent>
+                <CardActions>
                   <IconButton
-                    onClick={() => handleOpenEdit(servico)}
-                    color="primary"
+                    onClick={() => abrirEditor(servico)}
+                    color="secondary"
                   >
                     <EditIcon />
                   </IconButton>
@@ -226,26 +159,26 @@ const Servicos: React.FC = () => {
                   >
                     <DeleteIcon />
                   </IconButton>
-                </Box>
-              </CardContainer>
+                </CardActions>
+              </S.CardContainer>
             </Grid>
           ))}
         </Grid>
         <Pagination
-          count={totalPages}
-          page={page}
-          onChange={handlePageChange}
+          count={totalPaginas}
+          page={pagina}
+          onChange={mudarDePagina}
           color="secondary"
           sx={{ marginTop: "20px" }}
         />
       </Box>
 
-      <Modal open={open || openEdit} onClose={handleClose}>
-        <Box sx={modalStyle}>
+      <Modal open={abrir || abrirEdicao} onClose={fecharModal}>
+        <S.ModalBox>
           <Typography variant="h6" component="h2">
-            {openEdit ? "Editar Serviço" : "Adicionar Serviço"}
+            {abrirEdicao ? "Editar Serviço" : "Adicionar Serviço"}
           </Typography>
-          <form onSubmit={openEdit ? handleSubmitEdit : handleSubmit}>
+          <form onSubmit={abrirEdicao ? enviarEdicao : salvarServico}>
             <TextField
               label="Nome"
               variant="outlined"
@@ -261,7 +194,7 @@ const Servicos: React.FC = () => {
               fullWidth
               margin="normal"
               value={FormatarSalario(parseFloat(preco))}
-              onChange={handleSetPreco}
+              onChange={definirSalario}
               required
             />
             <TextField
@@ -275,18 +208,18 @@ const Servicos: React.FC = () => {
             />
             <Box display="flex" justifyContent="flex-end">
               <Button
-                onClick={handleClose}
+                onClick={fecharModal}
                 color="secondary"
                 sx={{ marginRight: 2 }}
               >
                 Cancelar
               </Button>
               <Button type="submit" variant="contained" color="primary">
-                {openEdit ? "Salvar" : "Adicionar"}
+                {abrirEdicao ? "Salvar" : "Adicionar"}
               </Button>
             </Box>
           </form>
-        </Box>
+        </S.ModalBox>
       </Modal>
     </div>
   );

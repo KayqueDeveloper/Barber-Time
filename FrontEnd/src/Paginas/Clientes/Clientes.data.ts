@@ -227,7 +227,7 @@ export const useClientes = () => {
           "error"
         );
       }
-      showSnackbar("Erro ao atualizar cliente, tente novamente.", "error");
+      showSnackbar("Erro ao remover cliente, tente novamente.", "error");
       return;
     }
     buscarClientes(pagina, searchTermo);
