@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Button,
   Modal,
@@ -7,17 +7,18 @@ import {
   Typography,
   IconButton,
   Alert,
+  Snackbar,
 } from "@mui/material";
 import { Card, CardContent, CardActions, Grid } from "@mui/material";
 
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import axios from "axios";
 import Pagination from "@mui/material/Pagination";
 import "./Clientes.css";
-import { validarCPF, verificarCpf } from "../../Helpers/validacoes.ts";
 import styled from "styled-components";
-import { Cliente } from "../../Models/Tipos";
+import { useClientes } from "./Clientes.data.ts";
+
+import * as S from "./Clientes.style.ts";
 
 const CardContainer = styled(Card)`
   border-radius: 12px;
@@ -30,230 +31,57 @@ const BotaoAdd = styled(Button)`
 `;
 
 const Clientes: React.FC = () => {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [cliente, setCliente] = useState<Cliente>({
-    id: 0, // Valor inicial para id
-    nome: "",
-    telefone: "",
-    email: "",
-    criado_em: "",
-    cpf: "",
-    rua: "",
-    cep: "",
-    estado: "",
-    cidade: "",
-    bairro: "",
-  });
-  const [open, setOpen] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
-  const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState(""); // Termo de pesquisa
-  const [page, setPage] = useState<number>(1); // Página atual
-  const [totalPages, setTotalPages] = useState<number>(1); // Total de páginas
-  const [cpfError, setCpfError] = useState(false);
-  const [cpfExiste, setCpfExiste] = useState("");
-  const [openDelete, setOpenDelete] = useState(false);
-  const [ClienteParaExcluir, setClienteParaExcluir] = useState<number | null>(
-    null
-  );
-
-  const handleOpenDelete = (id: number) => {
-    setClienteParaExcluir(id);
-    setOpenDelete(true);
-  };
-
-  const handleCloseDelete = () => {
-    setClienteParaExcluir(null);
-    setOpenDelete(false);
-  };
-
-  const fetchClientes = async (page: number, searchTerm: string = "") => {
-    try {
-      const response = await axios.get("http://localhost:8080/clientes", {
-        params: {
-          page,
-          limit: 6,
-          search: searchTerm,
-        },
-      });
-      const { clientes, currentPage, totalPages } = response.data;
-      setClientes(clientes);
-      setPage(currentPage);
-      setTotalPages(totalPages);
-    } catch (error) {
-      setError("Erro ao buscar clientes");
-    }
-  };
-
-  const buscarEnderecoPorCEP = async (cep: string) => {
-    setCliente({ ...cliente, cep });
-
-    if (cep.length > 7) {
-      try {
-        const response = await axios.get(
-          `https://viacep.com.br/ws/${cep}/json/`
-        );
-        if (response.data.erro) {
-          setError("CEP não encontrado");
-        } else {
-          setCliente({
-            ...cliente,
-            rua: response.data.logradouro,
-            bairro: response.data.bairro,
-            cidade: response.data.localidade,
-            estado: response.data.uf,
-            cep,
-          });
-
-          console.log(response.data.uf);
-        }
-      } catch (error) {
-        setError("Erro ao buscar endereço");
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchClientes(page, searchTerm);
-  }, [page, searchTerm]);
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setPage(1);
-  };
-
-  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
-  };
-
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => {
-    resetForm();
-    setOpen(false);
-    setOpenEdit(false);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validarCPF(cliente?.cpf)) {
-      setCpfError(true);
-      return;
-    }
-
-    const cpfDisponivel = await verificarCpf(
-      cliente?.id,
-      cliente?.cpf,
-      "cliente",
-      setCpfExiste
-    );
-    if (!cpfDisponivel) {
-      return;
-    }
-
-    if (!validarEmail(cliente?.email)) {
-      setError("Email inválido");
-      return;
-    }
-
-    if (!openEdit) {
-      try {
-        await axios.post("http://localhost:8080/clientes", cliente);
-        handleClose();
-        resetForm();
-      } catch (error) {
-        setError("Erro ao adicionar cliente");
-      }
-      return;
-    }
-    try {
-      await axios.put(`http://localhost:8080/clientes/${cliente?.id}`, cliente);
-      handleClose();
-      resetForm();
-      fetchClientes(page, searchTerm);
-    } catch (error) {
-      setError("Erro ao editar cliente");
-    }
-  };
-
-  const validarEmail = (email: string): boolean => {
-    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    return regex.test(email);
-  };
-
-  const resetForm = () => {
-    setCliente({
-      id: 0, // Valor inicial para id
-      nome: "",
-      telefone: "",
-      email: "",
-      criado_em: "",
-      cpf: "",
-    });
-    setCpfError(false);
-    setCpfExiste("");
-  };
-
-  const handleOpenEdit = (cliente: Cliente) => {
-    setCliente(cliente);
-    setOpenEdit(true);
-  };
-
-  const handleSetCPF = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const onlyNumbers = e.target.value.replace(/\D/g, "");
-
-    const formattedCpf = onlyNumbers
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-
-    setCliente({ ...cliente, cpf: formattedCpf });
-
-    if (!validarCPF(e.target.value)) {
-      setCpfError(true);
-      return;
-    }
-    setCpfError(false);
-    setCpfExiste("");
-  };
-
-  const removerCliente = async () => {
-    try {
-      await axios.delete(
-        `http://localhost:8080/clientes/${ClienteParaExcluir}`
-      );
-      setClientes(
-        clientes?.filter((cliente) => cliente.id !== ClienteParaExcluir)
-      );
-    } catch (error) {
-      setError("Erro ao remover cliente");
-    }
-    fetchClientes(page, searchTerm);
-    handleCloseDelete();
-  };
-
-  const modalStyle = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 400,
-    height: "80vh",
-    overflow: "auto",
-    bgcolor: "background.paper",
-    boxShadow: 24,
-    p: 4,
-    borderRadius: "4px",
-  };
+  const {
+    erro,
+    searchTermo,
+    abriModal,
+    clientes,
+    abrirEditar,
+    deletar,
+    totalPaginas,
+    pagina,
+    mudarDePagina,
+    abrir,
+    abrirEdicao,
+    fecharModal,
+    enviarDados,
+    cliente,
+    setCliente,
+    definirCPF,
+    cpfErro,
+    cpfExiste,
+    buscarEnderecoPorCEP,
+    abrirDelecao,
+    fecharDeletar,
+    removerCliente,
+    pesquisar,
+    snackbarSeverity,
+    snackbarMessage,
+    snackbarOpen,
+    setSnackbarOpen,
+  } = useClientes();
 
   return (
     <div className="clientes-container">
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000} // Tempo em milissegundos para desaparecer
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
       <Typography variant="h4" gutterBottom color="white">
         Gerenciamento de Clientes
       </Typography>
-      {error && (
+      {erro && (
         <Alert severity="error" className="error-message">
-          {error}
+          {erro}
         </Alert>
       )}
       <Box
@@ -264,13 +92,13 @@ const Clientes: React.FC = () => {
       >
         <TextField
           label="Buscar por Nome"
-          value={searchTerm}
-          onChange={handleSearch}
+          value={searchTermo}
+          onChange={pesquisar}
           placeholder="Digite o nome do cliente"
           variant="filled"
           style={{ backgroundColor: "#fff", borderRadius: "8px" }}
         />
-        <BotaoAdd variant="contained" color="primary" onClick={handleOpen}>
+        <BotaoAdd variant="contained" color="primary" onClick={abriModal}>
           Adicionar Cliente
         </BotaoAdd>
       </Box>
@@ -278,27 +106,71 @@ const Clientes: React.FC = () => {
         <Grid container spacing={2}>
           {clientes?.map((cliente) => (
             <Grid item xs={12} sm={6} md={4} key={cliente.id}>
-              <CardContainer style={{ borderRadius: "4px" }}>
+              <CardContainer
+                style={{
+                  borderRadius: "16px",
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  padding: "16px",
+                  background: "rgba(255, 255, 255, 0.2)", // Fundo translúcido
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)", // Sombra
+                  backdropFilter: "blur(10px)", // Desfoque no fundo
+                  border: "1px solid rgba(255, 255, 255, 0.3)", // Borda semi-transparente
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease", // Transições suaves
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.03)"; // Aumenta ligeiramente o tamanho
+                  e.currentTarget.style.boxShadow =
+                    "0 12px 40px rgba(0, 0, 0, 0.3)"; // Aumenta a sombra
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)"; // Volta ao tamanho original
+                  e.currentTarget.style.boxShadow =
+                    "0 8px 32px rgba(0, 0, 0, 0.2)"; // Volta à sombra original
+                }}
+              >
                 <CardContent>
-                  <Typography variant="h6">{cliente.nome}</Typography>
-                  <Typography variant="body2">
-                    Telefone: {cliente.telefone}
+                  <Typography
+                    variant="h6"
+                    style={{ fontWeight: "bold", color: "white" }}
+                  >
+                    {cliente.nome}
                   </Typography>
-                  <Typography variant="body2">
-                    Email: {cliente.email}
+                  <Typography variant="body2" color="white">
+                    <span style={{ fontWeight: "bold", color: "white" }}>
+                      Telefone:
+                    </span>{" "}
+                    {cliente.telefone}
                   </Typography>
-                  <Typography variant="body2">CPF: {cliente.cpf}</Typography>
-                  <Typography variant="body2">CEP: {cliente.cep}</Typography>
+                  <Typography variant="body2" color="white">
+                    <span style={{ fontWeight: "bold", color: "white" }}>
+                      Email:
+                    </span>{" "}
+                    {cliente.email}
+                  </Typography>
+                  <Typography variant="body2" color="white">
+                    <span style={{ fontWeight: "bold", color: "white" }}>
+                      CPF:
+                    </span>{" "}
+                    {cliente.cpf}
+                  </Typography>
+                  <Typography variant="body2" color="white">
+                    <span style={{ fontWeight: "bold", color: "white" }}>
+                      CEP:
+                    </span>{" "}
+                    {cliente.cep}
+                  </Typography>
                 </CardContent>
                 <CardActions>
                   <IconButton
-                    onClick={() => handleOpenEdit(cliente)}
-                    color="primary"
+                    onClick={() => abrirEditar(cliente)}
+                    color="secondary"
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
-                    onClick={() => handleOpenDelete(cliente.id)}
+                    onClick={() => deletar(cliente.id)}
                     color="secondary"
                   >
                     <DeleteIcon />
@@ -310,20 +182,20 @@ const Clientes: React.FC = () => {
         </Grid>
 
         <Pagination
-          count={totalPages}
-          page={page}
-          onChange={handlePageChange}
+          count={totalPaginas}
+          page={pagina}
+          onChange={mudarDePagina}
           color="secondary"
           sx={{ marginTop: "20px" }}
         />
       </Box>
 
-      <Modal open={open || openEdit} onClose={handleClose}>
-        <Box sx={modalStyle}>
+      <Modal open={abrir || abrirEdicao} onClose={fecharModal}>
+        <S.ModalBox>
           <Typography variant="h6" component="h2">
-            {openEdit ? "Editar Cliente" : "Adicionar Cliente"}
+            {abrirEdicao ? "Editar Cliente" : "Adicionar Cliente"}
           </Typography>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={enviarDados}>
             <TextField
               label="Nome"
               variant="outlined"
@@ -361,10 +233,10 @@ const Clientes: React.FC = () => {
               fullWidth
               margin="normal"
               value={cliente?.cpf}
-              onChange={handleSetCPF}
+              onChange={definirCPF}
               required
-              error={cpfError || cpfExiste !== ""}
-              helperText={cpfExiste ? cpfExiste : cpfError && "CPF inválido"}
+              error={cpfErro || cpfExiste !== ""}
+              helperText={cpfExiste ? cpfExiste : cpfErro && "CPF inválido"}
               inputProps={{ maxLength: 14 }}
             />
             <TextField
@@ -372,8 +244,11 @@ const Clientes: React.FC = () => {
               variant="outlined"
               fullWidth
               margin="normal"
-              value={cliente?.cep}
+              value={cliente?.cep
+                ?.replace(/\D/g, "")
+                ?.replace(/(\d{5})(\d)/, "$1-$2")}
               onChange={(e) => buscarEnderecoPorCEP(e.target.value)}
+              inputProps={{ maxLength: 9 }}
             />
             <TextField
               label="Rua"
@@ -416,7 +291,7 @@ const Clientes: React.FC = () => {
 
             <Box display="flex" justifyContent="flex-end">
               <Button
-                onClick={handleClose}
+                onClick={fecharModal}
                 color="secondary"
                 sx={{ marginRight: 2 }}
               >
@@ -426,23 +301,23 @@ const Clientes: React.FC = () => {
                 type="submit"
                 variant="contained"
                 color="primary"
-                disabled={cpfError}
+                disabled={cpfErro}
               >
-                {openEdit ? "Salvar" : "Adicionar"}
+                {abrirEdicao ? "Salvar" : "Adicionar"}
               </Button>
             </Box>
           </form>
-        </Box>
+        </S.ModalBox>
       </Modal>
 
-      <Modal open={openDelete} onClose={handleCloseDelete}>
-        <Box sx={{ ...modalStyle, height: "120px" }}>
+      <Modal open={abrirDelecao} onClose={fecharDeletar}>
+        <S.ModalBox>
           <Typography variant="h6" component="h2">
             Tem certeza de que deseja excluir este cliente?
           </Typography>
           <Box display="flex" justifyContent="flex-end" marginTop={2}>
             <Button
-              onClick={handleCloseDelete}
+              onClick={fecharDeletar}
               color="secondary"
               sx={{ marginRight: 2 }}
             >
@@ -452,7 +327,7 @@ const Clientes: React.FC = () => {
               Confirmar
             </Button>
           </Box>
-        </Box>
+        </S.ModalBox>
       </Modal>
     </div>
   );
