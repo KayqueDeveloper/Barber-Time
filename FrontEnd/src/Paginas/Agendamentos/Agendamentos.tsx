@@ -136,9 +136,7 @@ export const Agendamentos = () => {
                   textAlign: "left", // Ou "center" para centralizar
                   gap: "16px",
                   paddingBottom: "16px",
-                  background: "linear-gradient(135deg, #6a11cb, #2575fc)",
                   borderRadius: "5px",
-                  color: "white",
                   boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
                 },
               })}
