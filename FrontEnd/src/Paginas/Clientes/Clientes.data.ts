@@ -70,7 +70,7 @@ export const useClientes = () => {
 
   const resetarEstados = () => {
     setCliente({
-      id: 0, // Valor inicial para id
+      id: 0,
       nome: "",
       telefone: "",
       email: "",
@@ -250,7 +250,7 @@ export const useClientes = () => {
     } catch (erro) {
       if (erro.status === 500) {
         showSnackbar(
-          "Erro no servidor ao buscar clientes, entre em contato com os administradores!",
+          "Erro no servidor ao buscar clientes, entre em contato com os desenvolvedores!",
           "error"
         );
         return;

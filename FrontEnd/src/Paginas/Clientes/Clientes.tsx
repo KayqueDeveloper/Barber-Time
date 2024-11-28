@@ -133,9 +133,15 @@ const Clientes: React.FC = () => {
                 <CardContent>
                   <Typography
                     variant="h6"
-                    style={{ fontWeight: "bold", color: "white" }}
+                    style={{
+                      fontWeight: "bold",
+                      color: "white",
+                      wordWrap: "break-word",
+                      width: "100%",
+                      textOverflow: "ellipsis",
+                    }}
                   >
-                    {cliente.nome}
+                    {cliente?.nome?.substring(0, 24)}
                   </Typography>
                   <Typography variant="body2" color="white">
                     <span style={{ fontWeight: "bold", color: "white" }}>
@@ -154,12 +160,6 @@ const Clientes: React.FC = () => {
                       CPF:
                     </span>{" "}
                     {cliente.cpf}
-                  </Typography>
-                  <Typography variant="body2" color="white">
-                    <span style={{ fontWeight: "bold", color: "white" }}>
-                      CEP:
-                    </span>{" "}
-                    {cliente.cep}
                   </Typography>
                 </CardContent>
                 <CardActions>
